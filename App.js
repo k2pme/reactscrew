@@ -3,15 +3,23 @@ import React from 'react';
 import { useScrew } from './src/hooks/useScrew';
 
 const App = () => {
+
   const { isLoading, data, error, refetch, executeMethod } = useScrew('user');
 
+  console.log(data)
+
   const handleCreateUser = async () => {
+
     try {
+
       const newUser = { name: 'John Doe', email: 'john@example.com' };
       const response = await executeMethod('create', newUser);
       console.log('Utilisateur créé :', response);
+
     } catch (err) {
+
       console.error(err);
+      
     }
   };
 

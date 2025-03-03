@@ -96,22 +96,48 @@ export const DriverProvider = ({ children, apiInstance, screws }) => {
 
       dispatch({ type: 'REQUEST_SUCCESS', screwName, payload: data });
       return data;
+
     } catch (error) {
       // En cas d'erreur, tenter de loguer la réponse d'erreur si elle est disponible
       if (error.response) {
+
         logRequest(
+
           screw.methods[methodName].httpMethod,
           routeDef,
           error.response.status,
           error.response.headers,
           config.data || null,
           error.response.data
+          
         );
+
       }
+
+      // En cas d'échec, tente de récupérer les données depuis localforage si la persistance est activée
+      if (screw.persistence) {
+
+        const cachedData = await localforage.getItem(screw.name);
+
+        if (cachedData) {
+
+          console.warn(`Using cached data for screw ${screwName} due to fetch error.`);
+
+          dispatch({ type: 'REQUEST_SUCCESS', screwName, payload: cachedData });
+          return cachedData;
+
+        }
+
+      }
+
       dispatch({ type: 'REQUEST_FAILURE', screwName, error });
       throw error;
+
     }
+
   };
+  
+  
 
   // Initialisation des screws qui demandent une exécution au lancement
   useEffect(() => {
@@ -123,7 +149,9 @@ export const DriverProvider = ({ children, apiInstance, screws }) => {
         let data = null;
 
         if (screw.persistence) {
+
           data = await localforage.getItem(screw.name);
+
         }
 
         if (!data) {
@@ -135,6 +163,7 @@ export const DriverProvider = ({ children, apiInstance, screws }) => {
           } catch (error) {
 
             console.error(`Erreur lors de l'initialisation du screw ${screw.name} :`, error);
+
           }
 
         } else {
