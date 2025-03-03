@@ -17,7 +17,6 @@ ReactScrew is a lightweight React context tool designed to centralize and simpli
 - [Acknowledgements](#Acknowledgements)
 - [About the Developer]()
 
---
 
 ## Introduction
 
@@ -71,10 +70,7 @@ A boolean that determines if the screw's init method should automatically run on
 A flag to enable data persistence (via localForage) for caching purposes.
 
 - **methods**:
-An object where each key is a method name (e.g., init, getById, create) and each value is a configuration object defining:
-
-> **httpMethod**: The HTTP method to use (GET, POST, PUT, PATCH, DELETE).
-> **headers** (optional): Any custom headers required for that endpoint.
+An object where each key is a method name (e.g., init, getById, create) and each value is a configuration object 
 
 
 ## What Is a Driver?
@@ -108,30 +104,30 @@ A screw is a simple JavaScript object. Here’s an example for a `user` screw:
     methods: {
         // Retrieve the list of users
         init: {
-        route: '/users',
-        httpMethod: 'GET'
+            route: '/users',
+            httpMethod: 'GET'
         },
         // Retrieve a user by their ID
         getById: {
-        route: (id) => `/users/${id}`,
-        httpMethod: 'GET'
+            route: (id) => `/users/${id}`,
+            httpMethod: 'GET'
         },
         // Create a new user
         create: {
-        route: '/users',
-        httpMethod: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+            route: '/users',
+            httpMethod: 'POST',
+            headers: { 'Content-Type': 'application/json' }
         },
         // Update an existing user
         update: {
-        route: (id) => `/users/${id}`,
-        httpMethod: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
+            route: (id) => `/users/${id}`,
+            httpMethod: 'PUT',
+            headers: { 'Content-Type': 'application/json' }
         },
         // Delete a user
         remove: {
-        route: (id) => `/users/${id}`,
-        httpMethod: 'DELETE'
+            route: (id) => `/users/${id}`,
+            httpMethod: 'DELETE'
         }
     }
     };
@@ -145,9 +141,11 @@ A screw is a simple JavaScript object. Here’s an example for a `user` screw:
 - **persistence**: If true, the driver's logic will cache and retrieve this screw's data using localForage.
 - **methods**: An object containing each API operation. Each method configuration includes:
 
-    > *route*: A string or function returning the endpoint path.
-    > *httpMethod*: The HTTP method used for the request.
-    > *headers* (optional): Custom headers required for the API call.
+    > **route**: A string or function returning the endpoint path.
+    
+    > **httpMethod**: The HTTP method used for the request.
+    
+    > **headers** (optional): Custom headers required for the API call.
 
 
 ## How to Create an API Instance
@@ -159,8 +157,8 @@ Create an API instance using Axios (or your preferred HTTP client):
     import axios from 'axios';
 
     const api = axios.create({
-    baseURL: 'https://jsonplaceholder.typicode.com', // Change to your API base URL
-    timeout: 5000
+        baseURL: 'https://jsonplaceholder.typicode.com', // Change to your API base URL
+        timeout: 5000
     });
 
     export default api;
