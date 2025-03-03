@@ -6,16 +6,17 @@ ReactScrew is a lightweight React context tool designed to centralize and simpli
 
 - [Introduction](#Introduction)
 - [Installation](#Installation)
-- [ReactScrew](#What ReactScrew Can Do ?)
-- [Screw]()
-- [Driver]()
-- [Create a Screw]()
-- [Create your API Instance]()
-- [Integrate and Test ReactScrew]()
-- [Limits of ReactScrew]()
-- [How to Contribute]()
+- [ReactScrew](#What-ReactScrew-Can-Do-)
+- [Screw](#What-Is-a-Screw-)
+- [Driver](#What-Is-a-Driver-)
+- [Create a Screw](#How-to-Create-a-Screw)
+- [Create your API Instance](#How-to-Create-an-API-Instance)
+- [Integrate and Test ReactScrew](#How-to-Integrate-and-Test-ReactScrew)
+- [Limits of ReactScrew](#Limits-of-ReactScrew)
+- [How to Contribute](#How-to-Contribute)
 - [Acknowledgements](#Acknowledgements)
-- [About the Developer]()
+- [About the Developer](#About-the-Developer)
+
 
 
 ## Introduction
@@ -70,10 +71,10 @@ A boolean that determines if the screw's init method should automatically run on
 A flag to enable data persistence (via localForage) for caching purposes.
 
 - **methods**:
-An object where each key is a method name (e.g., init, getById, create) and each value is a configuration object 
+An object where each key is a method name (e.g., init, getById, create) and each value is a configuration object.
 
 
-## What Is a Driver?
+## What Is a Driver ?
 
 The driver is the React context provider (DriverProvider) that integrates all screws into your application. It:
 
@@ -98,38 +99,40 @@ A screw is a simple JavaScript object. Here’s an example for a `user` screw:
 ```javascript
 
     export const userScrew = {
-    name: 'user',
-    executeOnLaunch: true, // Automatically runs the init method on startup
-    persistence: false,    // Disable persistence for this example
-    methods: {
-        // Retrieve the list of users
-        init: {
-            route: '/users',
-            httpMethod: 'GET'
-        },
-        // Retrieve a user by their ID
-        getById: {
-            route: (id) => `/users/${id}`,
-            httpMethod: 'GET'
-        },
-        // Create a new user
-        create: {
-            route: '/users',
-            httpMethod: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        },
-        // Update an existing user
-        update: {
-            route: (id) => `/users/${id}`,
-            httpMethod: 'PUT',
-            headers: { 'Content-Type': 'application/json' }
-        },
-        // Delete a user
-        remove: {
-            route: (id) => `/users/${id}`,
-            httpMethod: 'DELETE'
+        
+        name: 'user',
+        executeOnLaunch: true, // Automatically runs the init method on startup
+        persistence: false,    // Disable persistence for this example
+        methods: {
+            // Retrieve the list of users
+            init: {
+                route: '/users',
+                httpMethod: 'GET'
+            },
+            // Retrieve a user by their ID
+            getById: {
+                route: (id) => `/users/${id}`,
+                httpMethod: 'GET'
+            },
+            // Create a new user
+            create: {
+                route: '/users',
+                httpMethod: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            },
+            // Update an existing user
+            update: {
+                route: (id) => `/users/${id}`,
+                httpMethod: 'PUT',
+                headers: { 'Content-Type': 'application/json' }
+            },
+            // Delete a user
+            remove: {
+                route: (id) => `/users/${id}`,
+                httpMethod: 'DELETE'
+            }
         }
-    }
+
     };
 ```
 
@@ -142,9 +145,9 @@ A screw is a simple JavaScript object. Here’s an example for a `user` screw:
 - **methods**: An object containing each API operation. Each method configuration includes:
 
     > **route**: A string or function returning the endpoint path.
-    
+
     > **httpMethod**: The HTTP method used for the request.
-    
+
     > **headers** (optional): Custom headers required for the API call.
 
 
@@ -306,7 +309,6 @@ ReactScrew was developed by *K2pme*.
 I am passionate about creating modular, easy-to-use tools that help developers build robust applications with minimal overhead.
 For more information, check out my GitHub profile and website.
 
-
---
+## 
 
 Happy coding with ReactScrew!
