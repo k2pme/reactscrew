@@ -1,6 +1,5 @@
 // src/App.jsx
 import React from 'react';
-import { useScrew } from './src/hooks/useScrew';
 
 const App = () => {
 

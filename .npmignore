@@ -1,0 +1,23 @@
+# Ignore les fichiers de configuration spécifiques à l'environnement de développement
+node_modules/
+src/**/*.test.*
+src/**/*.spec.*
+src/services
+coverage/
+tests/
+__tests__/
+
+# Dossiers et fichiers de configuration locaux
+.gitignore
+.npmignore
+webpack.config.js
+babel.config.js
+postcss.config.js
+tailwind.config.js
+
+
+# Fichiers non nécessaires pour l'exécution du package
+example/
+demo/
+public/
+.env*

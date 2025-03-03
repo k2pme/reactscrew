@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+      "target": "ES5",                         // Version ECMAScript cible
+      "module": "ESNext",                      // Choix du module (ou "commonjs" selon votre besoin)
+      "jsx": "react",                          // Pour gérer le JSX avec React
+      "strict": true,                          // Active toutes les vérifications strictes de TypeScript
+      "esModuleInterop": true,                 // Facilite l'import des modules CommonJS
+      "skipLibCheck": true,                    // Ignore la vérification des fichiers de déclaration des bibliothèques
+      "forceConsistentCasingInFileNames": true, // Force la casse cohérente dans les noms de fichiers
+      "moduleResolution": "node",              // Utilise la résolution de module de Node
+      "allowSyntheticDefaultImports": true     // Permet les imports par défaut pour les modules sans export default
+    },
+    "include": ["src", "types"]                // Inclut les dossiers contenant le code source et les déclarations
+  }
+  
