@@ -18,26 +18,27 @@ export const useScrewQuery = <TData = unknown>(
     });
   }
 
+  const client = context.resolveClient(screwName, options?.backend);
   const queryKey = useMemo(
-    () => context.client.getQueryKey(screwName, methodName, options as QueryObserverOptions),
-    [context.client, methodName, options, screwName]
+    () => client.getQueryKey(screwName, methodName, options as QueryObserverOptions),
+    [client, methodName, options, screwName]
   );
 
   useEffect(() => {
-    context.client.registerQueryObserver(
+    client.registerQueryObserver(
       screwName,
       methodName,
       options as QueryObserverOptions
     );
     return () => {
-      context.client.unregisterQueryObserver(queryKey);
+      client.unregisterQueryObserver(queryKey);
     };
-  }, [context.client, methodName, options, queryKey, screwName]);
+  }, [client, methodName, options, queryKey, screwName]);
 
   const state = useSyncExternalStore<QueryState<TData>>(
-    (listener) => context.client.subscribeQuery(queryKey, listener),
-    () => context.client.getQueryState(queryKey) as QueryState<TData>,
-    () => context.client.getQueryState(queryKey) as QueryState<TData>
+    (listener) => client.subscribeQuery(queryKey, listener),
+    () => client.getQueryState(queryKey) as QueryState<TData>,
+    () => client.getQueryState(queryKey) as QueryState<TData>
   );
 
   useEffect(() => {
@@ -52,14 +53,14 @@ export const useScrewQuery = <TData = unknown>(
       (state.status === 'idle' || (!hasData && state.status !== 'success') || state.invalidatedAt !== null);
 
     if (shouldFetch) {
-      void context.client
+      void client
         .fetchQuery<TData>(screwName, methodName, options as QueryObserverOptions, {
           force: state.invalidatedAt !== null
         })
         .catch(() => undefined);
     }
   }, [
-    context.client,
+    client,
     methodName,
     options,
     screwName,
@@ -78,7 +79,7 @@ export const useScrewQuery = <TData = unknown>(
     ...state,
     data,
     refetch: () =>
-      context.client.fetchQuery<TData>(
+      client.fetchQuery<TData>(
         screwName,
         methodName,
         options as QueryObserverOptions,

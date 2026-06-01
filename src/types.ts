@@ -148,6 +148,7 @@ export interface QueryObserverOptions<TArgs extends unknown[] = unknown[], TData
   cacheTime?: number;
   refetchOnWindowFocus?: boolean;
   refetchOnReconnect?: boolean;
+  backend?: string;
   onSuccess?: (data: TData) => void | Promise<void>;
   onError?: (error: ReactScrewErrorShape) => void | Promise<void>;
   onSettled?: (
@@ -167,6 +168,7 @@ export interface MutationExecuteOptions<TVariables = unknown> {
 }
 
 export interface UseScrewMutationOptions<TData = unknown, TVariables = unknown> {
+  backend?: string;
   onSuccess?: (data: TData, variables: TVariables | undefined) => void | Promise<void>;
   onError?: (
     error: ReactScrewErrorShape,
@@ -200,12 +202,20 @@ export interface LegacyUseScrewResult<
   executeMethod: <TReturn = unknown>(methodName: string, ...args: unknown[]) => Promise<TReturn>;
 }
 
-export interface DriverProviderProps {
-  children: ReactNode;
+export interface BackendConfig {
   apiInstance: ApiInstance;
   screws: ScrewsMap;
   clientOptions?: ReactScrewClientOptions;
   dehydratedState?: DehydratedState;
+}
+
+export interface DriverProviderProps {
+  children: ReactNode;
+  apiInstance?: ApiInstance;
+  screws?: ScrewsMap;
+  clientOptions?: ReactScrewClientOptions;
+  dehydratedState?: DehydratedState;
+  backends?: Record<string, BackendConfig>;
 }
 
 export interface ClientMetrics {
@@ -342,6 +352,8 @@ export interface ReactScrewClientLike {
 
 export interface ScrewClientContextValue {
   client: ReactScrewClient;
+  clients: ReadonlyMap<string, ReactScrewClient>;
+  resolveClient: (screwName: string, backend?: string) => ReactScrewClient;
 }
 
 export interface ReactScrewClient extends ReactScrewClientLike {

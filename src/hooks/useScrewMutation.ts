@@ -18,20 +18,21 @@ export const useScrewMutation = <TData = unknown, TVariables = unknown>(
     });
   }
 
+  const client = context.resolveClient(screwName, options?.backend);
   const mutationKey = useMemo(() => `${screwName}:${methodName}`, [methodName, screwName]);
   const state = useSyncExternalStore<MutationState<TData>>(
-    (listener) => context.client.subscribeMutation(mutationKey, listener),
-    () => context.client.getMutationState(mutationKey) as MutationState<TData>,
-    () => context.client.getMutationState(mutationKey) as MutationState<TData>
+    (listener) => client.subscribeMutation(mutationKey, listener),
+    () => client.getMutationState(mutationKey) as MutationState<TData>,
+    () => client.getMutationState(mutationKey) as MutationState<TData>
   );
 
   const mutateAsync = (variables?: TVariables, ...args: unknown[]) =>
-    context.client.executeMutation<TData, TVariables>(screwName, methodName, variables, args, options);
+    client.executeMutation<TData, TVariables>(screwName, methodName, variables, args, options);
 
   return {
     ...state,
     mutateAsync,
     mutate: mutateAsync,
-    reset: () => context.client.resetMutationState(mutationKey)
+    reset: () => client.resetMutationState(mutationKey)
   };
 };
