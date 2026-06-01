@@ -1,3 +1,5 @@
+'use client';
+
 import { useContext } from 'react';
 import { DriverContext } from '../components/DriverProvider';
 import { ReactScrewError } from '../errors';

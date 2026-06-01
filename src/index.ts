@@ -25,6 +25,7 @@
  */
 
 export { DriverProvider } from './components/DriverProvider';
+export { createReactScrewClient } from './client/ReactScrewClient';
 export { ReactScrewError } from './errors';
 export {
   createParameterSchema,

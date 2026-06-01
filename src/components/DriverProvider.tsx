@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useEffect, useMemo } from 'react';
 import { createReactScrewClient } from '../client/ReactScrewClient';
 import type { DriverProviderProps, ScrewClientContextValue } from '../types';

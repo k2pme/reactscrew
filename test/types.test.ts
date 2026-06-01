@@ -28,41 +28,21 @@ import {
   type QueryObserverOptions,
   type UseScrewQueryResult,
   type UseScrewMutationResult,
-  type UseScrewMutationOptions,
   type UseInfiniteScrewQueryResult,
   type InfiniteQueryObserverOptions,
   type ReactScrewErrorShape,
   type DocumentedErrorDefinition,
-  type DriverProviderProps,
   type ReactScrewClient,
-  type ReactScrewClientOptions,
   type HttpMethod,
   type ScrewMethodDefinition,
   type ScrewsMap as ScrewsMapAlias,
-  type LegacyUseScrewResult,
-  type ClientMetrics,
-  type RequestEvent,
-  type QuerySnapshot,
-  type MutationSnapshot,
-  type QueryInvalidationTarget,
   type DehydratedState,
-  type PersistedCacheConfig,
   type RuntimeValidator,
   type RollbackAction,
   type AuthStrategy,
   type OpenApiDocument,
-  type OpenApiSchemaObject,
-  type OpenApiParameterObject,
-  type OpenApiPathItemObject,
-  type OpenApiRequestBodyObject,
-  type OpenApiResponseObject,
-  type GeneratedOpenApiArtifacts,
   type OpenApiValidationResult,
-  type ParsedErrorContract,
-  type ParsedOpenApiContract,
-  type ParsedOperationContract,
-  type ParsedRequestBodyContract,
-  type ParsedSchemaContract
+  type ParsedOpenApiContract
 } from '../src';
 
 describe('Public API types', () => {
@@ -236,7 +216,7 @@ describe('Client types', () => {
 describe('RuntimeValidator type', () => {
   it('accepts a function returning value or void', () => {
     const v1: RuntimeValidator<string> = (x: string) => x;
-    const v2: RuntimeValidator<number> = (x: number) => undefined;
+    const v2: RuntimeValidator<number> = (_x: number) => undefined;
     expectTypeOf(v1).toBeFunction();
     expectTypeOf(v2).toBeFunction();
   });

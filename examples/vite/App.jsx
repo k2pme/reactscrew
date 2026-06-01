@@ -1,8 +1,5 @@
 import React from 'react';
-import { useScrewDevtools } from '../../src/hooks/useScrewDevtools';
-import { useScrewEvents } from '../../src/hooks/useScrewEvents';
-import { useScrewMutation } from '../../src/hooks/useScrewMutation';
-import { useScrewQuery } from '../../src/hooks/useScrewQuery';
+import { useScrewDevtools, useScrewEvents, useScrewMutation, useScrewQuery } from 'reactscrew';
 
 export default function App() {
   const { data, isLoading, refetch } = useScrewQuery('user', 'list', {

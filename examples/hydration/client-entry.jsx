@@ -1,8 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { DriverProvider } from '../../src/components/DriverProvider';
-import { useScrewQuery } from '../../src/hooks/useScrewQuery';
-import { createFetchAdapter } from '../../src/transport/adapters';
+import { DriverProvider, useScrewQuery, createFetchAdapter } from 'reactscrew';
 import { userScrew } from './screws/user';
 
 const api = createFetchAdapter('https://jsonplaceholder.typicode.com');

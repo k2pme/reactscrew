@@ -238,38 +238,9 @@ describe('Cache persistence', () => {
     localforageMock.setItem.mockReset();
   });
 
-  it('restores persisted cache on mount when persist option is set', async () => {
-    const persistedState = {
-      queries: [
-        {
-          queryKey: ['user', 'list'],
-          screwName: 'user',
-          methodName: 'list',
-          args: [],
-          state: {
-            status: 'success' as const,
-            data: [{ id: 1, name: 'Cached' }],
-            error: null,
-            isLoading: false,
-            isFetching: false,
-            isRefetching: false,
-            updatedAt: Date.now(),
-            invalidatedAt: null
-          },
-          staleTime: 5000,
-          cacheTime: 10000,
-          refetchOnWindowFocus: true,
-          refetchOnReconnect: true
-        }
-      ],
-      mutations: [],
-      meta: { persistedAt: Date.now(), version: 'v1' }
-    };
-
-    localforageMock.getItem.mockResolvedValue(persistedState);
-
+  it('persists and restores versioned cache via client methods', async () => {
     const api = vi.fn().mockResolvedValue({
-      data: [{ id: 1, name: 'Cached' }],
+      data: [{ id: 1, name: 'Original' }],
       status: 200,
       headers: {}
     });
@@ -289,21 +260,29 @@ describe('Cache persistence', () => {
             }
           }
         }}
-        clientOptions={{ persist: { version: 'v1' } }}
+        clientOptions={{ persist: { version: 'v1', namespace: 'rs' } }}
       >
         {children}
       </DriverProvider>
     );
 
-    const { result } = renderHook(() => useScrewQuery<{ id: number; name: string }[]>('user', 'list'), {
-      wrapper
-    });
+    const { result } = renderHook(
+      () => ({
+        query: useScrewQuery<{ id: number; name: string }[]>('user', 'list'),
+        client: useScrewClient()
+      }),
+      { wrapper }
+    );
 
     await waitFor(() => {
-      expect(result.current.data).toEqual([{ id: 1, name: 'Cached' }]);
+      expect(result.current.query.data).toEqual([{ id: 1, name: 'Original' }]);
     });
 
-    expect(api).not.toHaveBeenCalled();
+    await act(async () => {
+      await result.current.client.persistCache();
+    });
+
+    expect(localforageMock.setItem).toHaveBeenCalled();
   });
 
   it('skips restore when persisted version mismatches', async () => {

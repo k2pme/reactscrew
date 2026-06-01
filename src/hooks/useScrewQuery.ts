@@ -1,3 +1,5 @@
+'use client';
+
 import { useContext, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { ReactScrewError } from '../errors';
 import { DriverContext } from '../components/DriverProvider';

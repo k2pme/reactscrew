@@ -1,7 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { DriverProvider } from '../../src/components/DriverProvider';
-import { createFetchAdapter } from '../../src/transport/adapters';
+import { DriverProvider, createFetchAdapter } from 'reactscrew';
 import App from './App';
 import { userScrew } from './screws/user';
 

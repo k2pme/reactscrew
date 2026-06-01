@@ -1,5 +1,5 @@
 import React from 'react';
-import { useInfiniteScrewQuery } from '../../src/hooks/useInfiniteScrewQuery';
+import { useInfiniteScrewQuery } from 'reactscrew';
 
 export default function App() {
   const { data, fetchNextPage, hasNextPage, isFetching, pageParams } =

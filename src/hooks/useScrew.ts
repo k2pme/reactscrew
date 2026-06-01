@@ -1,6 +1,19 @@
+'use client';
+
 import { useEffect, useSyncExternalStore } from 'react';
 import { useScrewClient } from './useScrewClient';
 import type { LegacyUseScrewResult, QueryState } from '../types';
+
+const IDLE_STATE: QueryState = {
+  status: 'idle',
+  data: null,
+  error: null,
+  isLoading: false,
+  isFetching: false,
+  isRefetching: false,
+  updatedAt: null,
+  invalidatedAt: null
+};
 
 export const useScrew = <TData = unknown>(screwName: string): LegacyUseScrewResult<TData> => {
   const client = useScrewClient();
@@ -11,29 +24,11 @@ export const useScrew = <TData = unknown>(screwName: string): LegacyUseScrewResu
     () =>
       hasInit
         ? (client.getQueryState(queryKey) as QueryState<TData>)
-        : ({
-            status: 'idle',
-            data: null,
-            error: null,
-            isLoading: false,
-            isFetching: false,
-            isRefetching: false,
-            updatedAt: null,
-            invalidatedAt: null
-          } as QueryState<TData>),
+        : (IDLE_STATE as QueryState<TData>),
     () =>
       hasInit
         ? (client.getQueryState(queryKey) as QueryState<TData>)
-        : ({
-            status: 'idle',
-            data: null,
-            error: null,
-            isLoading: false,
-            isFetching: false,
-            isRefetching: false,
-            updatedAt: null,
-            invalidatedAt: null
-          } as QueryState<TData>)
+        : (IDLE_STATE as QueryState<TData>)
   );
 
   useEffect(() => {

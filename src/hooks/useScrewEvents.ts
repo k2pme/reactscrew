@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect } from 'react';
 import { useScrewClient } from './useScrewClient';
 import type { RequestEvent } from '../types';

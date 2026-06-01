@@ -1,5 +1,5 @@
 import React from 'react';
-import { useScrew } from '../../src/hooks/useScrew';
+import { useScrew } from 'reactscrew';
 
 const App = () => {
   const { isLoading, data, error, refetch, executeMethod } = useScrew('user');

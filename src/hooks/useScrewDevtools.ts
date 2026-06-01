@@ -1,3 +1,5 @@
+'use client';
+
 import { useSyncExternalStore } from 'react';
 import { useScrewClient } from './useScrewClient';
 import type { ClientMetrics, MutationSnapshot, QuerySnapshot, RequestEvent } from '../types';

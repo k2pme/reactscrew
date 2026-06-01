@@ -2,7 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import api from './services/api';
-import { DriverProvider } from '../../src/components/DriverProvider';
+import { DriverProvider } from 'reactscrew';
 import { postScrew } from './screws/post';
 import { userScrew } from './screws/user';
 

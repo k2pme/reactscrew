@@ -1,5 +1,4 @@
-import { createFetchAdapter } from '../../src/transport/adapters';
-import { withAuthStrategy } from '../../src/transport/auth';
+import { createFetchAdapter, withAuthStrategy } from 'reactscrew';
 
 let accessToken = 'initial-token';
 

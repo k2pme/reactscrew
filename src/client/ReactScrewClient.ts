@@ -1,3 +1,5 @@
+'use client';
+
 import localforage from 'localforage';
 import { normalizeError, ReactScrewError } from '../errors';
 import type {
@@ -17,7 +19,6 @@ import type {
   ReactScrewClient,
   ReactScrewClientOptions,
   RequestEvent,
-  RollbackAction,
   ScrewsMap,
   ScrewMethodDefinition,
   UseScrewMutationOptions,
@@ -70,9 +71,6 @@ const inferMethodType = (method: ScrewMethodDefinition): 'query' | 'mutation' =>
 
 const isQueryDefinition = (method: ScrewMethodDefinition): method is QueryDefinition =>
   inferMethodType(method) === 'query';
-
-const isMutationDefinition = (method: ScrewMethodDefinition): method is MutationDefinition =>
-  inferMethodType(method) === 'mutation';
 
 const defaultQueryKey = (screwName: string, methodName: string, args: unknown[]): QueryKey => [
   screwName,
@@ -357,7 +355,7 @@ export class DefaultReactScrewClient implements ReactScrewClient {
         );
 
         if (this.screws[screwName].persistence) {
-          await localforage.setItem(this.getPersistenceKey(entry.queryKey), validatedResponse);
+          await localforage?.setItem(this.getPersistenceKey(entry.queryKey), validatedResponse);
         }
 
         await definition.onSuccess?.(validatedResponse);
@@ -396,7 +394,7 @@ export class DefaultReactScrewClient implements ReactScrewClient {
         latestEntry.abortController = undefined;
 
         if (this.screws[screwName].persistence) {
-          const cachedData = await localforage.getItem<TData>(this.getPersistenceKey(entry.queryKey));
+          const cachedData = await localforage?.getItem<TData>(this.getPersistenceKey(entry.queryKey));
           if (cachedData !== null && cachedData !== undefined) {
             latestEntry.state = {
               status: 'success',
@@ -786,7 +784,7 @@ export class DefaultReactScrewClient implements ReactScrewClient {
       return;
     }
 
-    await localforage.setItem(this.getPersistStoreKey(), this.dehydrate());
+    await localforage?.setItem(this.getPersistStoreKey(), this.dehydrate());
   };
 
   restorePersistedCache = async (): Promise<void> => {
@@ -794,7 +792,7 @@ export class DefaultReactScrewClient implements ReactScrewClient {
       return;
     }
 
-    const state = await localforage.getItem<DehydratedState>(this.getPersistStoreKey());
+    const state = await localforage?.getItem<DehydratedState>(this.getPersistStoreKey());
     if (state) {
       this.hydrate(state);
     }

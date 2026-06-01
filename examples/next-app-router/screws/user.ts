@@ -1,4 +1,6 @@
-export const userScrew = {
+import type { ScrewDefinition } from 'reactscrew';
+
+export const userScrew: ScrewDefinition = {
   name: 'user',
   methods: {
     list: {

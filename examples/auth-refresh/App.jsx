@@ -1,5 +1,5 @@
 import React from 'react';
-import { useScrewQuery } from '../../src/hooks/useScrewQuery';
+import { useScrewQuery } from 'reactscrew';
 
 export default function App() {
   const { data, error, isLoading, refetch } = useScrewQuery('session', 'me');

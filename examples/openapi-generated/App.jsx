@@ -1,6 +1,5 @@
 import React from 'react';
-import { useScrewMutation } from '../../src/hooks/useScrewMutation';
-import { useScrewQuery } from '../../src/hooks/useScrewQuery';
+import { useScrewMutation, useScrewQuery } from 'reactscrew';
 
 export default function App() {
   const users = useScrewQuery('users', 'listUsers');

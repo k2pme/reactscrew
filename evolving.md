@@ -320,3 +320,9 @@ Le dev front:
 5. Niveau 5
 
 Ne pas attaquer les niveaux 4 et 5 avant stabilisation complete du mode `contract-first` des niveaux 1 a 3.
+
+
+4. CONCURRENT : refonte de l'API query/mutation, cache structuré, subscriptions fines, découplage transport
+5. Niveau 4 : proxy, toasts, loaders, UX feedback
+6. Niveau 5 : lots, orchestration, progression
+7. MATURE : SSR, devtools, enterprise features

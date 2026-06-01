@@ -1,3 +1,5 @@
+'use client';
+
 import type { DocumentedErrorDefinition, ReactScrewErrorShape } from './types';
 
 interface ReactScrewErrorOptions {
