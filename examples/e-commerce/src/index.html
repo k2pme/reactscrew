@@ -639,6 +639,54 @@
     }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
+    /* Batch mode */
+    .batch-mode { position: relative; }
+    .batch-checkbox {
+      position: absolute; top: 10px; left: 10px; z-index: 2;
+      width: 28px; height: 28px;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+    }
+    .batch-checkbox input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+    .batch-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-top: 2px solid var(--primary);
+      padding: 12px 24px; z-index: 100;
+      display: flex; align-items: center; gap: 16px;
+      justify-content: center;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    }
+    .batch-bar-count {
+      font-weight: 700; font-size: 1rem; color: var(--text);
+    }
+
+    /* Workflow progress */
+    .workflow-progress {
+      margin: 16px 0;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .workflow-step-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 0; font-size: .9rem;
+    }
+    .workflow-step-row .step-icon {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; flex-shrink: 0;
+    }
+    .workflow-step-row .step-icon.pending { background: var(--border); color: var(--text-muted); }
+    .workflow-step-row .step-icon.running { background: var(--primary); color: #fff; animation: pulse 1s infinite; }
+    .workflow-step-row .step-icon.success { background: #10b981; color: #fff; }
+    .workflow-step-row .step-icon.error { background: var(--error); color: #fff; }
+    .workflow-step-row .step-icon.skipped { background: #f59e0b; color: #fff; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+
     /* Responsive */
     @media (max-width: 900px) {
       .detail-layout { grid-template-columns: 1fr; }

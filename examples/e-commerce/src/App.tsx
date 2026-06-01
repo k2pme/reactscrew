@@ -302,6 +302,39 @@ const HomePage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => void; o
   const { data: categories } = useScrewQuery<string[]>('categories', 'list');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const batch = useScrewBatch();
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBatchAdd = async () => {
+    const productsData = products || [];
+    const selectedProducts = productsData.filter((p: any) => selectedIds.has(p.id));
+    if (selectedProducts.length === 0) return;
+    const actions = selectedProducts.map((p: any) => ({
+      screwName: 'cart' as const,
+      methodName: 'add' as const,
+      variables: { productId: p.id, title: p.title, price: p.price, image: p.image, quantity: 1 },
+      label: p.title.slice(0, 30),
+    }));
+    try {
+      const res = await batch.execute(actions);
+      const succeeded = res.summary.succeeded;
+      onAddToast(`${succeeded} article${succeeded > 1 ? 's' : ''} ajouté${succeeded > 1 ? 's' : ''} au panier ✓`, 'success');
+      if (res.summary.failed > 0) onAddToast(`${res.summary.failed} échec${res.summary.failed > 1 ? 's' : ''}`, 'error');
+      setSelectedIds(new Set());
+      setBatchMode(false);
+    } catch {
+      onAddToast('Erreur lors de l\'ajout groupé', 'error');
+    }
+  };
 
   const filtered = (products || []).filter((p: any) => {
     if (category && p.category !== category) return false;
@@ -319,6 +352,13 @@ const HomePage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => void; o
             {cat}
           </button>
         ))}
+        <button
+          className={`btn btn-sm ${batchMode ? 'btn-primary' : 'btn-outline'}`}
+          style={{ marginLeft: 'auto' }}
+          onClick={() => { setBatchMode((b) => !b); if (batchMode) setSelectedIds(new Set()); }}
+        >
+          {batchMode ? '✕ Quitter le mode batch' : '📦 Mode batch'}
+        </button>
       </div>
 
       {isLoading ? (
@@ -336,7 +376,12 @@ const HomePage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => void; o
       ) : (
         <div className="product-grid">
           {filtered.map((product: any) => (
-            <div key={product.id} className="product-card" onClick={() => onNavigate({ name: 'product', id: product.id })}>
+            <div key={product.id} className={`product-card${batchMode ? ' batch-mode' : ''}`} onClick={() => { if (batchMode) { toggleSelect(product.id); } else { onNavigate({ name: 'product', id: product.id }); } }}>
+              {batchMode && (
+                <div className="batch-checkbox" onClick={(e) => e.stopPropagation()}>
+                  <input type="checkbox" checked={selectedIds.has(product.id)} onChange={() => toggleSelect(product.id)} />
+                </div>
+              )}
               <div className="product-card-img">
                 <img src={product.image} alt={product.title} loading="lazy" />
               </div>
@@ -350,6 +395,23 @@ const HomePage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => void; o
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {batchMode && selectedIds.size > 0 && (
+        <div className="batch-bar">
+          <span className="batch-bar-count">{selectedIds.size} article{selectedIds.size > 1 ? 's' : ''} sélectionné{selectedIds.size > 1 ? 's' : ''}</span>
+          <button className="btn btn-primary" onClick={handleBatchAdd} disabled={batch.isExecuting}>
+            {batch.isExecuting
+              ? `⏳ Ajout… (${batch.progress?.itemsProcessed || 0}/${selectedIds.size})`
+              : `🛒 Ajouter au panier (${selectedIds.size})`
+            }
+          </button>
+          {batch.progress && batch.progress.percentage > 0 && batch.progress.percentage < 100 && (
+            <div style={{ width: 120, height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ width: `${batch.progress.percentage}%`, height: '100%', background: 'var(--primary)', transition: 'width .3s ease' }} />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -581,10 +643,13 @@ const CartPage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => void; o
 const CheckoutPage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => void; onAddToast: (m: string, t: 'success' | 'error') => void }) => {
   const { data: cart } = useScrewQuery<any>('cart', 'get');
   const checkout = useScrewMutation('orders', 'checkout');
+  const workflow = useScrewWorkflow();
+  const progress = useScrewProgress(workflow);
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [zip, setZip] = useState('');
   const [phone, setPhone] = useState('');
+  const [showWorkflow, setShowWorkflow] = useState(false);
 
   const items = cart?.items || [];
   const total = items.reduce((s: number, i: any) => s + i.price * i.quantity, 0);
@@ -596,6 +661,47 @@ const CheckoutPage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => voi
       onAddToast('Commande confirmée ! 🎉', 'success');
       onNavigate({ name: 'orders' });
     } catch { onAddToast('Erreur lors de la commande', 'error'); }
+  };
+
+  const handleWorkflowCheckout = async () => {
+    if (!address.trim() || !city.trim()) { onAddToast('Veuillez remplir les champs obligatoires', 'error'); return; }
+    setShowWorkflow(true);
+    try {
+      const steps = [
+        {
+          id: 'validate-stock',
+          screwName: 'cart',
+          methodName: 'get',
+          label: 'Vérification du stock',
+        },
+        {
+          id: 'checkout',
+          screwName: 'orders',
+          methodName: 'checkout',
+          variables: { shippingAddress: `${address}, ${city} ${zip}` },
+          label: 'Paiement et création de la commande',
+          dependsOn: ['validate-stock'],
+        },
+        {
+          id: 'tracking',
+          screwName: 'delivery',
+          methodName: 'track',
+          args: [{ orderId: 0 }],
+          label: 'Configuration du suivi livraison',
+          dependsOn: ['checkout'],
+          continueOnError: true,
+        },
+      ];
+      const res = await workflow.execute(steps);
+      if (res.status === 'completed' || res.status === 'partial') {
+        onAddToast('🎉 Commande workflow réussie !', 'success');
+        onNavigate({ name: 'orders' });
+      } else {
+        onAddToast('❌ Le workflow a échoué', 'error');
+      }
+    } catch {
+      onAddToast('Erreur lors du workflow', 'error');
+    }
   };
 
   if (items.length === 0) {
@@ -652,9 +758,61 @@ const CheckoutPage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => voi
               <span>${total.toFixed(2)}</span>
             </div>
           </div>
-          <button className="btn btn-primary btn-block btn-lg" onClick={handleCheckout} disabled={checkout.isPending}>
+
+          <button className="btn btn-primary btn-block btn-lg" onClick={handleCheckout} disabled={checkout.isPending || workflow.isExecuting}>
             {checkout.isPending ? '⏳ Traitement…' : `💰 Payer ${total.toFixed(2)} $`}
           </button>
+
+          <div style={{ margin: '12px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '.8rem' }}>ou</div>
+
+          <button className="btn btn-outline btn-block btn-lg" onClick={handleWorkflowCheckout} disabled={workflow.isExecuting || checkout.isPending}>
+            {workflow.isExecuting
+              ? `⏳ Workflow… ${progress?.percentage || 0}%`
+              : `🚀 Paiement Workflow (${total.toFixed(2)} $)`
+            }
+          </button>
+          <p style={{ fontSize: '.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 4 }}>
+            Validation → Paiement → Suivi (3 étapes)
+          </p>
+
+          {showWorkflow && workflow.result && (
+            <div className="workflow-progress">
+              <h4 style={{ fontSize: '.95rem', fontWeight: 700, marginBottom: 8 }}>
+                Avancement du workflow
+                {workflow.result.status === 'completed' && ' ✅'}
+                {workflow.result.status === 'partial' && ' ⚠️'}
+                {workflow.result.status === 'failed' && ' ❌'}
+              </h4>
+              {progress && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ width: `${progress.percentage}%`, height: '100%', background: 'var(--primary)', transition: 'width .3s ease', borderRadius: 4 }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                    <span>{Math.round(progress.percentage)}%</span>
+                    <span>{(progress.elapsedMs / 1000).toFixed(1)}s</span>
+                  </div>
+                </div>
+              )}
+              {workflow.result.steps.map((step) => (
+                <div key={step.id} className="workflow-step-row">
+                  <div className={`step-icon ${step.status}`}>
+                    {step.status === 'running' && '⏳'}
+                    {step.status === 'success' && '✓'}
+                    {step.status === 'error' && '✕'}
+                    {step.status === 'skipped' && '⏭'}
+                    {step.status === 'pending' && '·'}
+                  </div>
+                  <span style={{ flex: 1 }}>{step.label}</span>
+                  <span style={{ fontSize: '.8rem', color: 'var(--text-muted)' }}>
+                    {step.status === 'success' && `${(step.durationMs ?? 0).toFixed(0)}ms`}
+                    {step.status === 'error' && (step.error?.message || 'Erreur')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
           <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 8 }}>🔒 Paiement sécurisé — SSL 256-bit</p>
         </div>
       </div>
