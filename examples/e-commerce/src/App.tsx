@@ -167,8 +167,10 @@ const ordersApi = async (config: { method: string; url: string; data?: unknown; 
    2. Backend definitions
    ═══════════════════════════════════════════════ */
 
-const productsApi = createFetchAdapter('https://fakestoreapi.com');
-const usersApi = createFetchAdapter('https://jsonplaceholder.typicode.com');
+declare const __BACKEND_PRODUCTS__: string;
+declare const __BACKEND_USERS__: string;
+const productsApi = createFetchAdapter(__BACKEND_PRODUCTS__);
+const usersApi = createFetchAdapter(__BACKEND_USERS__);
 
 const backends = {
   products: {
@@ -336,19 +338,33 @@ const HomePage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => void; o
     }
   };
 
+  const pageSize = 12;
+  const getInitialPage = () => {
+    try { return Number(localStorage.getItem('shop-home-page')) || 1; } catch { return 1; }
+  };
+  const [page, setPage] = useState(getInitialPage);
+
+  const persistPage = (p: number) => {
+    setPage(p);
+    try { localStorage.setItem('shop-home-page', String(p)); } catch {}
+  };
+
   const filtered = (products || []).filter((p: any) => {
     if (category && p.category !== category) return false;
     if (search && !p.title?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <div>
       <div className="filter-bar">
-        <input type="text" placeholder="🔍 Rechercher un article…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <button className={`filter-chip${!category ? ' active' : ''}`} onClick={() => setCategory('')}>Tout</button>
+        <input type="text" placeholder="🔍 Rechercher un article…" value={search} onChange={(e) => { setSearch(e.target.value); persistPage(1); }} />
+        <button className={`filter-chip${!category ? ' active' : ''}`} onClick={() => { setCategory(''); persistPage(1); }}>Tout</button>
         {(categories || []).map((cat: string) => (
-          <button key={cat} className={`filter-chip${category === cat ? ' active' : ''}`} onClick={() => setCategory(cat)}>
+          <button key={cat} className={`filter-chip${category === cat ? ' active' : ''}`} onClick={() => { setCategory(cat); persistPage(1); }}>
             {cat}
           </button>
         ))}
@@ -375,7 +391,7 @@ const HomePage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => void; o
         </div>
       ) : (
         <div className="product-grid">
-          {filtered.map((product: any) => (
+          {paged.map((product: any) => (
             <div key={product.id} className={`product-card${batchMode ? ' batch-mode' : ''}`} onClick={() => { if (batchMode) { toggleSelect(product.id); } else { onNavigate({ name: 'product', id: product.id }); } }}>
               {batchMode && (
                 <div className="batch-checkbox" onClick={(e) => e.stopPropagation()}>
@@ -395,6 +411,20 @@ const HomePage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => void; o
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {totalPages > 1 && !batchMode && (
+        <div className="pagination">
+          <button className="pagination-btn" disabled={safePage <= 1} onClick={() => persistPage(safePage - 1)}>← Précédent</button>
+          <div className="pagination-pages">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button key={p} className={`pagination-page${p === safePage ? ' active' : ''}`} onClick={() => persistPage(p)}>
+                {p}
+              </button>
+            ))}
+          </div>
+          <button className="pagination-btn" disabled={safePage >= totalPages} onClick={() => persistPage(safePage + 1)}>Suivant →</button>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 {
   "name": "reactscrew",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "React provider and hook for organising API modules as screws",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

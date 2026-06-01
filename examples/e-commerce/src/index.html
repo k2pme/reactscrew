@@ -639,6 +639,29 @@
     }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
+    /* Pagination */
+    .pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; margin: 32px 0 16px;
+    }
+    .pagination-btn {
+      padding: 8px 16px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); background: var(--surface);
+      font-family: inherit; font-size: .9rem; cursor: pointer;
+      transition: all var(--transition);
+    }
+    .pagination-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+    .pagination-btn:disabled { opacity: .4; cursor: default; }
+    .pagination-pages { display: flex; gap: 4px; }
+    .pagination-page {
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--surface); font-family: inherit; font-size: .9rem;
+      cursor: pointer; transition: all var(--transition);
+    }
+    .pagination-page:hover { border-color: var(--primary); color: var(--primary); }
+    .pagination-page.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+
     /* Batch mode */
     .batch-mode { position: relative; }
     .batch-checkbox {

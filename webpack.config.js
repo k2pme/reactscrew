@@ -22,6 +22,11 @@ const cfg = configs[demo] || configs['e-commerce'];
 
 const srcDir = path.resolve(__dirname, 'src');
 
+const isDev = process.env.WEBPACK_SERVE === 'true';
+
+const backendProducts = isDev ? '/api/proxy/fakestoreapi' : 'https://fakestoreapi.com';
+const backendUsers = isDev ? '/api/proxy/jsonplaceholder' : 'https://jsonplaceholder.typicode.com';
+
 module.exports = {
   entry: cfg.entry,
   output: {
@@ -44,6 +49,10 @@ module.exports = {
       const mod = resource.request.replace(/^node:/, '');
       resource.request = mod;
     }),
+    new webpack.DefinePlugin({
+      __BACKEND_PRODUCTS__: JSON.stringify(backendProducts),
+      __BACKEND_USERS__: JSON.stringify(backendUsers),
+    }),
     new HtmlWebpackPlugin({
       template: cfg.template,
     }),
@@ -62,5 +71,19 @@ module.exports = {
     compress: true,
     port: 7001,
     open: true,
+    proxy: [
+      {
+        context: ['/api/proxy/fakestoreapi'],
+        target: 'https://fakestoreapi.com',
+        pathRewrite: { '^/api/proxy/fakestoreapi': '' },
+        changeOrigin: true,
+      },
+      {
+        context: ['/api/proxy/jsonplaceholder'],
+        target: 'https://jsonplaceholder.typicode.com',
+        pathRewrite: { '^/api/proxy/jsonplaceholder': '' },
+        changeOrigin: true,
+      },
+    ],
   },
 };

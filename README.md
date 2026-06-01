@@ -470,6 +470,27 @@ export default function UsersClient({ dehydratedState }) {
 | Generated artifacts | [examples/e-commerce/generated/](./examples/e-commerce/generated) |
 | Examples | [examples/basic](./examples/basic), [examples/openapi-generated](./examples/openapi-generated), [examples/next-app-router](./examples/next-app-router) |
 
+## Performance
+
+Benchmarks measured on **Node.js v22.22.0, Linux**, against a local loopback HTTP server (~2ms network latency per request). All figures are the average of 30–500 iterations.
+
+| Benchmark | avg | p50 | p95 |
+|---|---|---|---|
+| **Cold query** (first fetch, ~2ms network) | 5.24 ms | 3.63 ms | 8.58 ms |
+| **Warm query** (from cache) | 3.28 ms | 3.25 ms | 3.81 ms |
+| **Cold slow query** (~30ms network) | 31.22 ms | 31.24 ms | 31.72 ms |
+| **Mutation** execution | 3.69 ms | 3.55 ms | 4.32 ms |
+| **Concurrent dedup** (5 identical requests, 1 network call) | 3.35 ms | — | — |
+| **Batch** (5 items, parallel) | 0.42 ms | — | — |
+| **Workflow** (3 sequential steps) | 0.21 ms | — | — |
+| **OpenAPI parse** (15-endpoint document) | 0.18 ms | 0.14 ms | 0.23 ms |
+| **Logger.info** (enabled, JSON output) | 0.037 ms | 0.022 ms | 0.030 ms |
+| **Logger.debug** (filtered by log level, ~0 cost) | 0.001 ms | — | — |
+
+**Bundle size:** `dist/`=616 KB (38 files), gzipped=62.7 KB. Barrel re-export: 6.9 KB. Tree-shaking eliminates unused modules.
+
+**Cache overhead:** ~0.5 KB per cache entry (based on 500 entries). Concurrent dedup routes identical requests through a single network call — subsequent subscribers await the same in-flight promise.
+
 ## Scripts
 
 ```bash
