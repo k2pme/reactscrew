@@ -3,36 +3,33 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: './src/index.js',
+  entry: './examples/basic/index.jsx',
   output: {
     filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'examples/basic/dist'),
     clean: true,
   },
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/,
-        exclude: [/node_modules/, /src/services],
+        test: /\.(js|jsx|ts|tsx)$/,
+        exclude: /node_modules/,
         use: 'babel-loader',
       },
     ],
   },
   resolve: {
-    extensions: ['.js', '.jsx'],
-    fallback: {
-      fs: false  // indique à Webpack d'ignorer 'fs'
-    }
+    extensions: ['.ts', '.tsx', '.js', '.jsx']
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './public/index.html',
+      template: './examples/basic/index.html',
     }),
   ],
   devServer: {
-    static: path.join(__dirname, 'dist'),
+    static: path.join(__dirname, 'examples/basic/dist'),
     compress: true,
-    port: 9000,
+    port: 7001,
     open: true,
   },
 };

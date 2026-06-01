@@ -1,13 +1,23 @@
 {
   "name": "reactscrew",
   "version": "1.0.2",
-  "description": "Outil React context pour communiquer avec un backend via des screws",
+  "description": "React provider and hook for organising API modules as screws",
   "main": "dist/index.js",
-  "types": "types/reactscrew.d.ts",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "reactscrew-openapi": "./scripts/generate-openapi-screws.mjs",
+    "reactscrew-openapi-contract": "./scripts/openapi-contract.mjs"
+  },
   "files": [
     "dist",
-    "package.json",
-    "README.md"
+    "README.md",
+    "scripts"
   ],
   "repository": {
     "type": "git",
@@ -15,35 +25,46 @@
   },
   "scripts": {
     "start": "webpack serve --mode development",
-    "test": "echo \"No test specified\" && exit 0",
-    "build": "babel src --out-dir dist --copy-files && cp package.json README.md dist",
-    "prepublishOnly": "npm run build"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "rm -rf dist && babel src --extensions \".ts,.tsx\" --out-dir dist && tsc -p tsconfig.build.json",
+    "generate:openapi": "node scripts/generate-openapi-screws.mjs",
+    "inspect:openapi": "node scripts/openapi-contract.mjs inspect",
+    "validate:openapi": "node scripts/openapi-contract.mjs validate",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
   },
   "keywords": [
     "react",
     "context",
-    "axios",
+    "fetch",
     "screws",
     "backend"
   ],
   "author": "k2pme",
   "license": "MIT",
   "dependencies": {
-    "axios": "^1.8.1",
-    "fs": "^0.0.1-security",
-    "localforage": "^1.10.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "reactscrew": "file:reactscrew-1.0.2.tgz"
+    "localforage": "^1.10.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.26.4",
     "@babel/core": "^7.26.9",
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-react": "^7.26.3",
+    "@babel/preset-typescript": "^7.27.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^24.0.1",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
     "babel-loader": "^8.4.1",
     "html-webpack-plugin": "^5.6.3",
-    "joi": "^17.13.3",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4",
     "webpack": "^5.73.0",
     "webpack-cli": "^4.10.0",
     "webpack-dev-server": "^4.9.2"

@@ -1,314 +1,229 @@
-
-
 # ReactScrew
 
-ReactScrew is a lightweight React context tool designed to centralize and simplify API communication in your React applications. It introduces the innovative concept of *screws* and a *driver* to modularize your API endpoints and state management, allowing you to configure and call your API endpoints with minimal boilerplate.
+`reactscrew` is a React data layer built around domain modules called `screws`.
 
-- [Introduction](#Introduction)
-- [Installation](#Installation)
-- [ReactScrew](#What-ReactScrew-Can-Do-)
-- [Screw](#What-Is-a-Screw-)
-- [Driver](#What-Is-a-Driver-)
-- [Create a Screw](#How-to-Create-a-Screw)
-- [Create your API Instance](#How-to-Create-an-API-Instance)
-- [Integrate and Test ReactScrew](#How-to-Integrate-and-Test-ReactScrew)
-- [Limits of ReactScrew](#Limits-of-ReactScrew)
-- [How to Contribute](#How-to-Contribute)
-- [Acknowledgements](#Acknowledgements)
-- [About the Developer](#About-the-Developer)
+It now exposes three levels of API:
 
+- legacy compatibility with `useScrew`
+- explicit `useScrewQuery` / `useScrewMutation`
+- mature features such as hydration, infinite queries, devtools snapshots, event observers and OpenAPI generation
 
+## Core Features
 
-## Introduction
-
-ReactScrew leverages a declarative configuration to define "screws"— modules that group related API endpoints (e.g., users, posts)—and a "driver" that acts as a centralized context provider. With ReactScrew, you can:
-
-- Configure multiple HTTP methods (*GET*, *POST*, *PUT*, *PATCH*, *DELETE*)
-- Customize headers and request data for advanced API interactions
-- Automatically manage loading, error, and data states
-- Log detailed request/response information in development mode
-
+- Query and mutation hooks with deterministic `queryKey`
+- In-memory cache with invalidation and request deduplication
+- Fine-grained subscriptions via `useSyncExternalStore`
+- Optional cache persistence with versioned storage
+- SSR/SSG hydration through `dehydrate` / `hydrate`
+- Infinite query support
+- Structured request events and devtools snapshots
+- Transport adapters for `fetch` and `axios`
+- Auth retry strategy for 401 refresh flows
+- OpenAPI screw generation
 
 ## Installation
 
-Install ReactScrew via npm:
-
 ```bash
 npm install reactscrew
-
 ```
 
+`react` and `react-dom` are peer dependencies.
 
-## What ReactScrew Can Do ?
+## Quick Start
 
-- **Centralize API Communication** :
-Provides a unified context that handles all your API calls.
-
-- **Declarative API Configuration** :
-Define each module (screw) with its endpoints, HTTP methods, and headers in a simple JSON-like format.
-
-- **Automatic State Management** :
-Manages the isLoading, data, and error states for every API request.
-
-- **Comprehensive Logging** :
-In development mode, it logs request details (time, method, URL, headers, body, response, status) to the terminal and optionally to a log file.
-
-- **Supports Data Mutations** :
-Easily handle not only data retrieval (GET) but also create (POST), update (PUT/PATCH), and delete (DELETE) operations.
-
-
-
-## What Is a Screw ?
-A screw is a module representing a group of related API endpoints. It is defined as a JavaScript object that includes:
-
-- **name**:
-A unique identifier for the screw.
-
-- **executeOnLaunch**:
-A boolean that determines if the screw's init method should automatically run on application startup.
-
-- **persistence** :
-A flag to enable data persistence (via localForage) for caching purposes.
-
-- **methods**:
-An object where each key is a method name (e.g., init, getById, create) and each value is a configuration object.
-
-
-## What Is a Driver ?
-
-The driver is the React context provider (DriverProvider) that integrates all screws into your application. It:
-
-- Executes the init method for each screw that has executeOnLaunch enabled.
-- Manages the global state of all screws (loading, error, and data).
-- Exposes actions and a hook (useScrew) for easy API interactions in your components.
-- Incorporates a comprehensive logging system in development mode.
-Concept of Screw-Driver
-
-
-### ReactScrew introduces a modular approach where:
-
-Screws define the "what" — the specific endpoints and methods for different parts of your API.
-The Driver defines the "how" — centralizing the API call logic, state management, and logging.
-This separation of concerns makes your codebase easier to maintain, extend, and test.
-
-
-## How to Create a Screw
-
-A screw is a simple JavaScript object. Here’s an example for a `user` screw:
-
-```javascript
-
-    export const userScrew = {
-        
-        name: 'user',
-        executeOnLaunch: true, // Automatically runs the init method on startup
-        persistence: false,    // Disable persistence for this example
-        methods: {
-            // Retrieve the list of users
-            init: {
-                route: '/users',
-                httpMethod: 'GET'
-            },
-            // Retrieve a user by their ID
-            getById: {
-                route: (id) => `/users/${id}`,
-                httpMethod: 'GET'
-            },
-            // Create a new user
-            create: {
-                route: '/users',
-                httpMethod: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            },
-            // Update an existing user
-            update: {
-                route: (id) => `/users/${id}`,
-                httpMethod: 'PUT',
-                headers: { 'Content-Type': 'application/json' }
-            },
-            // Delete a user
-            remove: {
-                route: (id) => `/users/${id}`,
-                httpMethod: 'DELETE'
-            }
-        }
-
-    };
-```
-
-
-### Screw Properties Explained
-
-- **name**: Unique identifier (e.g., 'user').
-- **executeOnLaunch**: If set to true, the driver's initialization effect will call the init method for this screw.
-- **persistence**: If true, the driver's logic will cache and retrieve this screw's data using localForage.
-- **methods**: An object containing each API operation. Each method configuration includes:
-
-    > **route**: A string or function returning the endpoint path.
-
-    > **httpMethod**: The HTTP method used for the request.
-
-    > **headers** (optional): Custom headers required for the API call.
-
-
-## How to Create an API Instance
-
-Create an API instance using Axios (or your preferred HTTP client):
-
-```javascript
-
-    import axios from 'axios';
-
-    const api = axios.create({
-        baseURL: 'https://jsonplaceholder.typicode.com', // Change to your API base URL
-        timeout: 5000
-    });
-
-    export default api;
-
-```
-
-## How to Integrate and Test ReactScrew
-
-- **Step 1** : Wrap Your Application with the DriverProvider
-
-
-```javascript
-
+```jsx
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { DriverProvider } from 'reactscrew';
-import App from './App';
-import api from './services/api';
-import { userScrew } from './services/screws/user';
-import { postScrew } from './services/screws/post';
+import { DriverProvider, createFetchAdapter, useScrewQuery } from 'reactscrew';
 
+const api = createFetchAdapter('https://jsonplaceholder.typicode.com');
 
-
-const screws = {
-  user: userScrew, 
-  post: postScrew
+const userScrew = {
+  name: 'user',
+  executeOnLaunch: true,
+  methods: {
+    list: {
+      type: 'query',
+      route: '/users',
+      httpMethod: 'GET'
+    },
+    create: {
+      type: 'mutation',
+      route: '/users',
+      httpMethod: 'POST',
+      invalidateQueries: [{ screwName: 'user', methodName: 'list' }]
+    }
+  }
 };
 
-const container = document.getElementById('root');
-const root = createRoot(container);
+function App() {
+  const { data, isLoading } = useScrewQuery('user', 'list');
 
-root.render(
-  <DriverProvider apiInstance={api} screws={screws}>
+  if (isLoading) {
+    return <p>Loading...</p>;
+  }
+
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+}
+
+createRoot(document.getElementById('root')).render(
+  <DriverProvider
+    apiInstance={api}
+    screws={{ user: userScrew }}
+    clientOptions={{
+      persist: { version: 'v1' }
+    }}
+  >
     <App />
   </DriverProvider>
 );
-
-
 ```
-**Notice** :  *pay attention to `userScrew.name` and his key in `screws` dict, they have to be the same, otherwise you will occure an issue while init your screw.
 
-for instance if the `name` of your screw is 'order' this is how you will create your `screws` dict
+## Query API
 
 ```jsx
-const screws = {
-  order: orderScrew, // orderScrew.name === screws.name 
-};
+import { useScrewQuery, useScrewMutation } from 'reactscrew';
 
+const query = useScrewQuery('user', 'list', {
+  staleTime: 60_000
+});
+
+const mutation = useScrewMutation('user', 'create', {
+  optimisticUpdate: ({ client, variables }) => {
+    const previous = client.getQueryData(['user', 'list']);
+    client.setQueryData(['user', 'list'], (current) => [...(current ?? []), variables]);
+
+    return {
+      rollback: () => client.setQueryData(['user', 'list'], previous ?? [])
+    };
+  }
+});
 ```
 
+## Hydration
 
-- **Step 2** : Use the useScrew Hook in Your Components
+```tsx
+import { DriverProvider } from 'reactscrew';
 
-    `useScrew` hook for getting a screw data or action
-
-    **what useScrew returns**
-
-    - `isLoading` : screw loading state, 
-    - `data` : screw data, 
-    - `error` : screw error, 
-    - `refetch` : updating screw data, 
-    - `executeMethod` : method for calling screw action
-
-```jsx
-
-    import React from 'react';
-    import { useScrew } from 'reactscrew'; // or your relative path
-
-    const App = () => {
-
-    const { isLoading, data, error, refetch, executeMethod } = useScrew('user');
-
-    const handleCreateUser = async () => {
-
-        try {
-
-            const newUser = { name: 'John Doe', email: 'john@example.com' };
-
-            const response = await executeMethod('create', newUser);
-
-        } catch (err) {
-            console.error(err);
-        }
-
-    };
-
-    if (isLoading) return <p>Loading...</p>;
-    if (error) return <p>Error: {error.message}</p>;
-
-    return (
-        <div>
-            <h1>User List</h1>
-            {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
-            <button onClick={refetch}>Refresh</button>
-            <button onClick={handleCreateUser}>Create User</button>
-        </div>
-    );
-    };
-
-    export default App;
+<DriverProvider
+  apiInstance={api}
+  screws={screws}
+  dehydratedState={serverDehydratedState}
+  clientOptions={{ persist: { version: 'v2' } }}
+>
+  <App />
+</DriverProvider>;
 ```
 
-## Limits of ReactScrew
+Use `useScrewClient()` to access:
 
-Basic Caching and State Management:
-While ReactScrew offers basic state management and optional persistence, it does not provide advanced caching strategies like React Query or Apollo Client.
+- `dehydrate()`
+- `hydrate(state)`
+- `persistCache()`
+- `restorePersistedCache()`
 
-- **Simplified Logging and Error Handling**:
-The logging mechanism is basic and writes to the console and an optional file (in Node environments). For production-grade logging, consider integrating a dedicated logging service.
+## Infinite Queries
 
-- **No Advanced Authentication**:
-The tool does not handle complex authentication flows out-of-the-box. You will need to extend or integrate additional middleware for such use cases.
+```tsx
+import { useInfiniteScrewQuery } from 'reactscrew';
 
-- **Browser Limitations**:
-File system logging using Node’s fs module only works in Node environments. In browsers, logging is limited to the console.
+const posts = useInfiniteScrewQuery('post', 'list', {
+  initialPageParam: 1,
+  getNextPageParam: (_lastPage, _pages, lastPageParam) =>
+    lastPageParam < 10 ? lastPageParam + 1 : undefined
+});
+```
 
+## Observability and Devtools
 
-## How to Contribute
+Use `useScrewEvents` for streaming request events and `useScrewDevtools` for current snapshots:
 
-Contributions are welcome! To contribute:
+```tsx
+import { useScrewDevtools, useScrewEvents } from 'reactscrew';
 
-1. **Fork the Repository**:
-Create your own fork of the project on GitHub.
+useScrewEvents((event) => {
+  console.log(event.type, event.screwName, event.methodName);
+});
 
-2. **Create a Feature Branch**:
-Develop your feature or bugfix on a separate branch.
+const devtools = useScrewDevtools();
+console.log(devtools.metrics, devtools.queries, devtools.mutations);
+```
 
-3. **Submit a Pull Request**:
-Once your changes are ready, submit a pull request for review.
+## Auth Strategy
 
-4. **Follow Code Guidelines**:
-Please adhere to existing coding styles and write tests for your changes.
+```ts
+import { createFetchAdapter, withAuthStrategy } from 'reactscrew';
 
-Feel free to open issues for any bugs or feature requests.
+const api = withAuthStrategy(createFetchAdapter('https://api.example.com'), {
+  getAccessToken: async () => localStorage.getItem('token'),
+  refreshAccessToken: async () => {
+    const nextToken = 'new-token';
+    localStorage.setItem('token', nextToken);
+    return nextToken;
+  }
+});
+```
 
-## Acknowledgements
+## OpenAPI Generation
 
-Thanks to the contributors and the open-source community for their valuable input.
-Special thanks to the developers of Axios, React, and localForage for the tools that make this project possible.
+Programmatic API:
 
+```ts
+import {
+  generateOpenApiArtifacts,
+  generateOpenApiArtifactsFromFile,
+  generateScrewsFromOpenApiContract,
+  generateScrewsFromOpenApiDocument,
+  loadOpenApiContract,
+  parseOpenApiDocument,
+  validateOpenApiContract
+} from 'reactscrew';
+```
 
-## About the Developer
+CLI:
 
-ReactScrew was developed by *K2pme*.
-I am passionate about creating modular, easy-to-use tools that help developers build robust applications with minimal overhead.
-For more information, check out my GitHub profile and website.
+```bash
+npm run build
+npm run generate:openapi -- ./openapi.json ./generated
+npm run inspect:openapi -- ./openapi.json
+npm run validate:openapi -- ./openapi.json
+```
 
-## 
+Generated artifacts now include:
+- `generated/screws`
+- `generated/hooks`
+- `generated/types`
+- `generated/validators`
+- `generated/errors`
 
-Happy coding with ReactScrew!
+Level 3 contract runtime features:
+- automatic params/body/response validators from OpenAPI schemas
+- documented error catalogs with `code`, `status`, `description`, `retryable` and `uiHint`
+- runtime error normalization through `ReactScrewError`
+
+Generation strategy notes are in [docs/generation-strategy.md](/home/clodlin/reactscrew/docs/generation-strategy.md).
+
+## Examples
+
+- Basic example: [examples/basic](/home/clodlin/reactscrew/examples/basic)
+- Next.js App Router example: [examples/next-app-router](/home/clodlin/reactscrew/examples/next-app-router)
+- Vite example: [examples/vite](/home/clodlin/reactscrew/examples/vite)
+
+## Scripts
+
+```bash
+npm run typecheck
+npm run test
+npm run build
+npm run generate:openapi -- ./openapi.json ./generated
+```
+
+## Current Limits
+
+- No visual devtools panel yet, only programmatic snapshots/hooks
+- OpenAPI generation now creates a stable `generated/` structure and preserves `custom/` and `wrappers/`
+- Server Components are supported at the hydration boundary, not as a direct hook runtime
+
+## Roadmap
+
+Execution phases are tracked in [TASK.md](/home/clodlin/reactscrew/TASK.md).
