@@ -1,1 +1,0 @@
-export declare const logRequest: (method: string, path: string, status: number, headers: Record<string, unknown> | undefined, requestBody: unknown, responseBody: unknown, durationMs?: number) => void;

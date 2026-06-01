@@ -1,3 +1,29 @@
+/**
+ * reactscrew — Public API contract.
+ *
+ * ## Runtime exports
+ * - DriverProvider    — React context provider that wires screws, transport, and cache.
+ * - ReactScrewError   — Normalised error class (code, status, message, description, details, retryable, uiHint).
+ * - useScrew           — Legacy hook (generic, single-screw). Prefer useScrewQuery / useScrewMutation.
+ * - useScrewQuery      — Typed query hook with cache, invalidation, and selector support.
+ * - useScrewMutation   — Typed mutation hook with optimistic updates and rollback.
+ * - useScrewClient     — Low-level client accessor.
+ * - useInfiniteScrewQuery — Paginated/cursor-based query hook.
+ * - useScrewDevtools   — Devtools snapshot hook (queries, mutations, metrics, events).
+ * - useScrewEvents     — Request lifecycle event subscription hook.
+ * - createFetchAdapter — Transport adapter using the Fetch API.
+ * - createAxiosAdapter — Transport adapter wrapping an Axios-like instance.
+ * - withAuthStrategy   — Higher-order transport that injects tokens and handles refresh.
+ *
+ * ## OpenAPI generation (pure, browser-safe)
+ * - parseOpenApiDocument / validateOpenApiContract
+ * - generateScrewsFromOpenApiContract / generateScrewsFromOpenApiDocument
+ * - generateOpenApiArtifacts / generateOpenApiArtifactsFromDocument
+ *
+ * ## File-based generation (Node.js only, import from "reactscrew/generation/openapi")
+ * - loadOpenApiContract / generateOpenApiArtifactsFromFile / generateScrewsFromOpenApiFile
+ */
+
 export { DriverProvider } from './components/DriverProvider';
 export { ReactScrewError } from './errors';
 export {
@@ -17,11 +43,8 @@ export { withAuthStrategy } from './transport/auth';
 export {
   generateOpenApiArtifacts,
   generateOpenApiArtifactsFromDocument,
-  generateOpenApiArtifactsFromFile,
   generateScrewsFromOpenApiContract,
   generateScrewsFromOpenApiDocument,
-  generateScrewsFromOpenApiFile,
-  loadOpenApiContract,
   parseOpenApiDocument,
   validateOpenApiContract
 } from './generation/openapi';
@@ -46,6 +69,7 @@ export type {
   ApiInstance,
   ApiRequestConfig,
   ApiResponse,
+  AuthStrategy,
   ClientMetrics,
   DocumentedErrorDefinition,
   DriverProviderProps,
