@@ -16,6 +16,7 @@
   - [useScrewDevtools](#usescrewdevtools)
   - [useScrewBatch](#usescrewbatch)
   - [useScrewWorkflow](#usescrewworkflow)
+  - [useScrewAutoWorkflow](#usescrewautoworkflow)
   - [useScrewProgress](#usescrewprogress)
   - [useScrewFeedback](#usescrewfeedback)
   - [useScrewToast](#usescrewtoast)
@@ -381,7 +382,7 @@ const { execute, isExecuting } = useScrewBatch([
 
 ### useScrewWorkflow
 
-Orchestrates sequential steps with dependencies, retry, and parallelism.
+Orchestrates sequential steps with dependencies, retry, parallelism, and conditional gating.
 
 ```ts
 useScrewWorkflow(
@@ -389,6 +390,18 @@ useScrewWorkflow(
   options?: UseScrewWorkflowOptions
 ): UseScrewWorkflowReturn
 ```
+
+**`WorkflowConfig`**
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `steps` | `WorkflowStep[]` | — | Steps to execute |
+| `condition?` | `WorkflowCondition` | — | Global workflow condition evaluated before execution |
+| `waitForCondition?` | `boolean` | `false` | Poll and re-evaluate if condition fails |
+| `variables?` | `Record<string, unknown>` | — | Arbitrary data injected into condition context via `ctx.variables` |
+| `onStepComplete?` | `(step, all) => void \| Promise<void>` | — | Step completion callback |
+| `onStepError?` | `(error, step) => boolean \| Promise<boolean>` | — | Step error callback; return `true` to continue |
+| `onStepCondition?` | `(result) => void` | — | Called when a step-level or workflow-level condition is evaluated |
 
 **`WorkflowStep`**
 
@@ -406,6 +419,22 @@ useScrewWorkflow(
 | `parallel?` | `boolean` | `false` | Can execute in parallel |
 | `continueOnError?` | `boolean` | `false` | Continue if step fails |
 | `backend?` | `string` | — | Target backend |
+| `condition?` | `WorkflowCondition` | — | Step-level condition; evaluated before the step runs |
+| `waitForCondition?` | `boolean` | `false` | Poll and re-evaluate if step condition fails |
+
+**`WorkflowCondition`**
+
+```ts
+type WorkflowCondition = (context: WorkflowConditionContext) => boolean | Promise<boolean>;
+```
+
+**`WorkflowConditionContext`**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `stepResults` | `Record<string, StepResult>` | Results of completed steps |
+| `getScrewData` | `<T>(screwName, methodName, args?) => T \| undefined` | Read current screw cache data |
+| `variables?` | `Record<string, unknown>` | Variables injected from `WorkflowConfig.variables` |
 
 **Returns** `UseScrewWorkflowReturn`
 
@@ -417,17 +446,87 @@ useScrewWorkflow(
 | `isExecuting` | `boolean` | Currently executing |
 | `reset` | `() => void` | Resets state |
 
-**Example**
+**Examples**
+
+Basic sequential:
 ```tsx
 const { execute } = useScrewWorkflow({
   steps: [
     { id: 'reserve',  screwName: 'inventory', methodName: 'reserve', variables: { productId: 5 } },
     { id: 'payment',  screwName: 'billing',   methodName: 'charge',  variables: { amount: 99 }, dependsOn: ['reserve'] },
-    { id: 'ship',     screwName: 'logistics', methodName: 'ship',    variables: {}, dependsOn: ['payment'], retry: 2 },
   ],
 });
 
 <button onClick={() => execute()}>🔁 Run</button>
+```
+
+With workflow-level condition and variable injection:
+```tsx
+const { execute, progress } = useScrewWorkflow({
+  steps: [
+    { id: 'checkout', screwName: 'orders', methodName: 'checkout' },
+  ],
+  condition: (ctx) => {
+    const cart = ctx.getScrewData('cart', 'get');
+    return cart?.items?.length >= (ctx.variables?.minItems ?? 1);
+  },
+  waitForCondition: true,
+  variables: { minItems: 1 },
+});
+```
+
+---
+
+### useScrewAutoWorkflow
+
+Auto-executes a workflow with conditional gating and screw-state watching. Useful for declarative workflows defined in `ScrewDefinition.workflows`.
+
+```ts
+useScrewAutoWorkflow(
+  options: UseScrewAutoWorkflowOptions
+): UseScrewAutoWorkflowReturn
+```
+
+**`UseScrewAutoWorkflowOptions`**
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `config` | `WorkflowConfig` | — | Workflow configuration (steps, condition, variables, etc.) |
+| `autoStart?` | `boolean` | `false` | Automatically execute on mount |
+| `watch?` | `{ screwName, methodName, args? }[]` | — | Screw state to watch for changes |
+| `intervalMs?` | `number` | — | Watch interval |
+| `onProgress?` | `(snap) => void` | — | Progress callback |
+| `onStepComplete?` | `(step, all) => void` | — | Step completion callback |
+| `onStatusChange?` | `(status) => void` | — | Status change callback |
+| `signal?` | `AbortSignal` | — | Cancellation signal |
+
+**Returns** `UseScrewAutoWorkflowReturn`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `start` | `() => Promise<{ steps; status }>` | Manually start the workflow |
+| `reset` | `() => void` | Reset to idle |
+| `result` | `{ steps; status } \| null` | Last result |
+| `progress` | `ProgressSnapshot \| null` | Progress |
+| `isExecuting` | `boolean` | Currently executing |
+| `status` | `'idle' \| 'waiting' \| 'running' \| 'completed' \| 'failed'` | Current status |
+| `waitingSteps` | `string[]` | Step IDs currently waiting on conditions |
+
+**Example**
+```tsx
+const { start, progress, status } = useScrewAutoWorkflow({
+  config: {
+    steps: [
+      { id: 'checkout', screwName: 'orders', methodName: 'checkout' },
+    ],
+    condition: (ctx) => {
+      const cart = ctx.getScrewData('cart', 'get');
+      return cart?.items?.length > 0;
+    },
+    waitForCondition: true,
+  },
+  onProgress: (snap) => setProgress(snap),
+});
 ```
 
 ---
@@ -868,13 +967,54 @@ executeBatch(
 
 ### executeWorkflow
 
-Pure (non-React) version of workflow execution.
+Pure (non-React) version of workflow execution. Supports step-level and workflow-level conditions, variable injection, and polling.
 
 ```ts
 executeWorkflow(
   config: WorkflowConfig,
   ctx: ExecutionContext
 ): Promise<{ steps: StepResult[]; status: 'completed' | 'failed' | 'partial' }>
+```
+
+**`WorkflowConfig`**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `steps` | `WorkflowStep[]` | Steps to execute |
+| `condition?` | `WorkflowCondition` | Global workflow condition; evaluated before execution |
+| `waitForCondition?` | `boolean` | If `true` and condition fails, poll every 500ms (max 60 attempts) |
+| `variables?` | `Record<string, unknown>` | Arbitrary data accessible in condition context via `ctx.variables` |
+| `onStepComplete?` | `(step, all) => void \| Promise<void>` | Per-step completion callback |
+| `onStepError?` | `(error, step) => boolean \| Promise<boolean>` | Error callback; return `true` to continue |
+| `onStepCondition?` | `(result) => void` | Called with `{ stepId, passed, skipped }` when a condition is evaluated |
+
+**`ExecutionContext`**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `client` | `ReactScrewClient` | Client for API calls |
+| `resolveClient` | `(screwName, backend?) => ReactScrewClient` | Multi-backend resolution |
+| `onProgress` | `(snapshot) => void` | Progress callback |
+| `onStepCondition` | `(result) => void` | Condition evaluation callback |
+| `signal` | `AbortSignal` | Cancellation signal |
+| `variables` | `Record<string, unknown>` | Variables merged from config |
+
+**Example with condition and variables**
+```tsx
+const result = await executeWorkflow({
+  steps: [
+    { id: 'checkout', screwName: 'orders', methodName: 'checkout', variables: { shippingAddress } },
+  ],
+  condition: (ctx) => {
+    const cart = ctx.getScrewData('cart', 'get');
+    return cart?.items?.length >= (ctx.variables?.minItems ?? 1);
+  },
+  waitForCondition: true,
+  variables: { minItems: 1 },
+  onStepCondition: (res) => {
+    if (!res.passed) console.log(`⏳ waiting: ${res.stepId}`);
+  },
+}, { client, resolveClient, onProgress });
 ```
 
 ---
@@ -1048,8 +1188,9 @@ Generated files: `types/index.ts`, `errors/index.ts`, `validators/index.ts`, `sc
 | `HttpMethod` | `'GET' \| 'POST' \| 'PUT' \| 'PATCH' \| 'DELETE'` |
 | `QueryStatus` | `'idle' \| 'loading' \| 'success' \| 'error' \| 'stale'` |
 | `MutationStatus` | `'idle' \| 'pending' \| 'success' \| 'error'` |
-| `ScrewDefinition` | `{ name: string; methods: Record<string, ScrewMethodDefinition>; executeOnLaunch?: boolean; persistence?: boolean }` |
+| `ScrewDefinition` | `{ name: string; methods: Record<string, ScrewMethodDefinition>; executeOnLaunch?: boolean; persistence?: boolean; workflows?: Record<string, ScrewWorkflowDefinition> }` |
 | `ScrewMethodDefinition` | `QueryDefinition \| MutationDefinition` |
+| `ScrewWorkflowDefinition` | `{ config: { steps; condition?; waitForCondition?; variables?; onStepComplete?; onStepError?; onStepCondition? }; autoStart?: boolean; watch?: { screwName; methodName; args? }[] }` |
 | `QueryDefinition` | `{ type?: 'query'; route; staleTime; cacheTime; queryKey; refetchOnWindowFocus; refetchOnReconnect; … }` |
 | `MutationDefinition` | `{ type?: 'mutation'; route; invalidateQueries; optimisticUpdate; bodyValidator; … }` |
 | `BackendConfig` | `{ apiInstance: ApiInstance; screws: ScrewsMap; clientOptions?; dehydratedState? }` |
@@ -1059,8 +1200,13 @@ Generated files: `types/index.ts`, `errors/index.ts`, `validators/index.ts`, `sc
 | `QueryObserverOptions` | `{ args?; enabled?; select?; staleTime?; cacheTime?; refetchOnWindowFocus?; backend?; … }` |
 | `UseScrewQueryResult` | `QueryState & { refetch; queryKey }` |
 | `UseScrewMutationResult` | `MutationState & { mutate; mutateAsync; reset }` |
+| `UseScrewAutoWorkflowOptions` | `{ config: WorkflowConfig; autoStart?; watch?; onProgress?; onStepComplete?; onStatusChange?; signal? }` |
+| `UseScrewAutoWorkflowReturn` | `{ start; reset; result; progress; isExecuting; status; waitingSteps }` |
 | `BatchAction` | `{ screwName; methodName; variables?; args?; backend? }` |
-| `WorkflowStep` | `{ id; screwName; methodName; dependsOn?; retry?; continueOnError?; backend? }` |
+| `WorkflowStep` | `{ id; screwName; methodName; dependsOn?; retry?; continueOnError?; backend?; condition?; waitForCondition? }` |
+| `WorkflowConfig` | `{ steps: WorkflowStep[]; condition?: WorkflowCondition; waitForCondition?: boolean; variables?: Record<string, unknown>; onStepComplete?; onStepError?; onStepCondition? }` |
+| `WorkflowCondition` | `(ctx: WorkflowConditionContext) => boolean \| Promise<boolean>` |
+| `WorkflowConditionContext` | `{ stepResults: Record<string, StepResult>; getScrewData: Function; variables?: Record<string, unknown> }` |
 | `ProgressSnapshot` | `{ percentage; currentStep; itemsProcessed; itemsTotal; phase; … }` |
 | `RequestEvent` | `{ type; screwName; methodName; status?; durationMs?; error? }` |
 | `DocumentedErrorDefinition` | `{ code; status?; description?; retryable?; uiHint? }` |

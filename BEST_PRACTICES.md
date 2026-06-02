@@ -408,6 +408,86 @@ Prevents loading flashes for requests under 300ms. The user never sees a loader 
 
 Used for notifications, logs, or non-critical actions.
 
+### Workflow: Conditions and Gating
+
+Use workflow-level conditions to guard the entire workflow, and step-level conditions to gate individual steps:
+
+```ts
+// Workflow-level: only run if cart has items
+condition: (ctx) => {
+  const cart = ctx.getScrewData('cart', 'get');
+  return cart?.items?.length >= (ctx.variables?.minItems ?? 1);
+},
+waitForCondition: true,   // poll every 500ms until condition passes (max 30s)
+variables: { minItems: 1 },
+```
+
+```ts
+// Step-level: only run this step if a prior step met a condition
+{
+  id: 'apply-discount',
+  screwName: 'cart',
+  methodName: 'applyCoupon',
+  condition: (ctx) => ctx.stepResults['checkout']?.data?.total > 100,
+  waitForCondition: false,
+}
+```
+
+### Workflow: Variable Injection
+
+Pass configuration data into conditions via `variables`. This keeps conditions testable and decoupled from closure scope:
+
+```ts
+variables: { minItems: 1, enableTracking: true, shippingCutoff: '18:00' },
+condition: (ctx) => {
+  return ctx.stepResults['checkout']?.data?.shipped === true
+    && ctx.variables?.enableTracking === true;
+},
+```
+
+### Workflow: Declarative Workflows
+
+Define workflows inside `ScrewDefinition.workflows` for self-documenting, co-located orchestration:
+
+```ts
+const cartScrew: ScrewDefinition = {
+  name: 'cart',
+  methods: { get: { type: 'query', route: '/cart', httpMethod: 'GET' } },
+  workflows: {
+    checkout: {
+      config: {
+        steps: [
+          { id: 'validate', screwName: 'cart', methodName: 'get' },
+          { id: 'checkout', screwName: 'orders', methodName: 'checkout', dependsOn: ['validate'] },
+        ],
+        condition: (ctx) => !!ctx.getScrewData('cart', 'get')?.items?.length,
+        waitForCondition: true,
+      },
+      autoStart: false,
+    },
+  },
+};
+```
+
+### Workflow: onStepCondition Callback
+
+Use `onStepCondition` to react when a condition blocks execution — show a "waiting" state, trigger external events, or log:
+
+```ts
+onStepCondition: (result) => {
+  if (!result.passed && result.skipped === false) {
+    setWaitingSteps((prev) => [...prev, result.stepId]);
+    setStatus('waiting');
+  }
+},
+```
+
+### Workflow: Polling Behavior
+
+When `waitForCondition: true`, the engine polls every **500ms** and re-evaluates the condition function with fresh `getScrewData` values. After **60 failed attempts** (~30s), the workflow marks the step/workflow as `failed` with a timeout error.
+
+Design your conditions to be idempotent — they should read state rather than mutate it.
+
 ---
 
 ## 7. Observability
@@ -605,6 +685,33 @@ optimisticUpdate: async ({ client, variables }) => {
 // ✅ SOLUTION: aggregate endpoints or use a timeout
 // Example: load user data in a single /profile request
 // rather than separate /user + /preferences + /notifications
+```
+
+### ❌ Workflow Condition That Mutates State
+
+```ts
+// BUG: side effects in conditions cause unpredictable behavior
+condition: (ctx) => {
+  localStorage.setItem('last-check', Date.now()); // side effect!
+  return true;
+}
+
+// ✅ FIX: conditions are read-only
+condition: (ctx) => {
+  return !!ctx.getScrewData('cart', 'get')?.items?.length;
+}
+```
+
+### ❌ Forgetting waitForCondition for Polling
+
+```ts
+// BUG: if condition fails, the workflow fails immediately
+condition: (ctx) => ctx.ready === true,
+// → workflow fails on first evaluation if not ready
+
+// ✅ FIX: enable polling
+condition: (ctx) => ctx.ready === true,
+waitForCondition: true,  // retry every 500ms
 ```
 
 ### ❌ Confusing mutate and mutateAsync

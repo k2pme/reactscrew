@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useContext } from 'react';
 import {
   DriverProvider, useScrewQuery, useScrewMutation, useScrewDevtools, ScrewDevtools,
-  createFetchAdapter, useScrewBatch, useScrewWorkflow,
+  createFetchAdapter, useScrewBatch, useScrewWorkflow, executeWorkflow, DriverContext,
 } from 'reactscrew';
 
 /* ═══════════════════════════════════════════════
@@ -214,6 +214,23 @@ const backends = {
           remove: { type: 'mutation' as const, route: (p: { itemId: number }) => `/cart/${p.itemId}`, httpMethod: 'DELETE' as const, invalidateQueries: [{ screwName: 'cart', methodName: 'get' }] },
           update: { type: 'mutation' as const, route: (p: { itemId: number }) => `/cart/${p.itemId}`, httpMethod: 'PATCH' as const, invalidateQueries: [{ screwName: 'cart', methodName: 'get' }] },
         },
+        workflows: {
+          checkout: {
+            autoStart: false,
+            config: {
+              steps: [
+                { id: 'validate', screwName: 'cart', methodName: 'get', label: 'Vérification du panier' },
+                { id: 'checkout', screwName: 'orders', methodName: 'checkout', label: 'Paiement', dependsOn: ['validate'] },
+              ],
+              condition: (ctx) => {
+                const cart = ctx.getScrewData<any>('cart', 'get');
+                const minItems = (ctx.variables?.minItems as number) ?? 1;
+                return cart?.items?.length >= minItems;
+              },
+              waitForCondition: true,
+            },
+          },
+        },
       },
       orders: {
         name: 'orders',
@@ -221,6 +238,22 @@ const backends = {
           list: { type: 'query' as const, route: '/orders', httpMethod: 'GET' as const },
           checkout: { type: 'mutation' as const, route: '/orders', httpMethod: 'POST' as const, invalidateQueries: [{ screwName: 'orders', methodName: 'list' }, { screwName: 'cart', methodName: 'get' }] },
           get: { type: 'query' as const, route: (p: { orderId: number }) => `/orders/${p.orderId}`, httpMethod: 'GET' as const },
+        },
+        workflows: {
+          deliverySetup: {
+            autoStart: false,
+            watch: [{ screwName: 'orders', methodName: 'list' }],
+            config: {
+              steps: [
+                { id: 'getOrder', screwName: 'orders', methodName: 'get', args: [{ orderId: 0 }], label: 'Récupération commande' },
+                { id: 'track', screwName: 'delivery', methodName: 'track', args: [{ orderId: 0 }], label: 'Configuration livraison', dependsOn: ['getOrder'], continueOnError: true },
+              ],
+              condition: (ctx) => {
+                const orders = ctx.getScrewData<any[]>('orders', 'list');
+                return orders && orders.length > 0;
+              },
+            },
+          },
         },
       },
       delivery: {
@@ -674,12 +707,13 @@ const CheckoutPage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => voi
   const { data: cart } = useScrewQuery<any>('cart', 'get');
   const checkout = useScrewMutation('orders', 'checkout');
   const workflow = useScrewWorkflow();
-  const progress = useScrewProgress(workflow);
+  const ctx = useContext(DriverContext);
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [zip, setZip] = useState('');
   const [phone, setPhone] = useState('');
   const [showWorkflow, setShowWorkflow] = useState(false);
+  const [wfProgress, setWfProgress] = useState(0);
 
   const items = cart?.items || [];
   const total = items.reduce((s: number, i: any) => s + i.price * i.quantity, 0);
@@ -722,7 +756,28 @@ const CheckoutPage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => voi
           continueOnError: true,
         },
       ];
-      const res = await workflow.execute(steps);
+      const res = await executeWorkflow(
+        {
+          steps,
+          condition: (ctx: { getScrewData: Function; variables?: Record<string, unknown> }) => {
+            const cartData = ctx.getScrewData<any>('cart', 'get');
+            const minItems = (ctx.variables?.minItems as number) ?? 1;
+            return cartData?.items?.length >= minItems;
+          },
+          waitForCondition: true,
+          variables: { minItems: 1, enableTracking: true },
+          onStepCondition: (result: { stepId: string; passed: boolean }) => {
+            if (!result.passed) {
+              onAddToast(`⚠️ Attente condition pour "${result.stepId}"`, 'error');
+            }
+          },
+        },
+        {
+          client: ctx!.client,
+          resolveClient: ctx!.resolveClient,
+          onProgress: (snap) => setWfProgress(snap.percentage),
+        },
+      );
       if (res.status === 'completed' || res.status === 'partial') {
         onAddToast('🎉 Commande workflow réussie !', 'success');
         onNavigate({ name: 'orders' });
@@ -797,7 +852,7 @@ const CheckoutPage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => voi
 
           <button className="btn btn-outline btn-block btn-lg" onClick={handleWorkflowCheckout} disabled={workflow.isExecuting || checkout.isPending}>
             {workflow.isExecuting
-              ? `⏳ Workflow… ${progress?.percentage || 0}%`
+              ? `⏳ Workflow… ${wfProgress || 0}%`
               : `🚀 Paiement Workflow (${total.toFixed(2)} $)`
             }
           </button>
@@ -805,41 +860,23 @@ const CheckoutPage = ({ onNavigate, onAddToast }: { onNavigate: (p: Page) => voi
             Validation → Paiement → Suivi (3 étapes)
           </p>
 
-          {showWorkflow && workflow.result && (
+          {showWorkflow && (
             <div className="workflow-progress">
               <h4 style={{ fontSize: '.95rem', fontWeight: 700, marginBottom: 8 }}>
                 Avancement du workflow
-                {workflow.result.status === 'completed' && ' ✅'}
-                {workflow.result.status === 'partial' && ' ⚠️'}
-                {workflow.result.status === 'failed' && ' ❌'}
+                {workflow.result?.status === 'completed' && ' ✅'}
+                {workflow.result?.status === 'failed' && ' ❌'}
               </h4>
-              {progress && (
+              {wfProgress > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
-                    <div style={{ width: `${progress.percentage}%`, height: '100%', background: 'var(--primary)', transition: 'width .3s ease', borderRadius: 4 }} />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                    <span>{Math.round(progress.percentage)}%</span>
-                    <span>{(progress.elapsedMs / 1000).toFixed(1)}s</span>
+                    <div style={{ width: `${wfProgress}%`, height: '100%', background: 'var(--primary)', transition: 'width .3s ease', borderRadius: 4 }} />
                   </div>
                 </div>
               )}
-              {workflow.result.steps.map((step) => (
-                <div key={step.id} className="workflow-step-row">
-                  <div className={`step-icon ${step.status}`}>
-                    {step.status === 'running' && '⏳'}
-                    {step.status === 'success' && '✓'}
-                    {step.status === 'error' && '✕'}
-                    {step.status === 'skipped' && '⏭'}
-                    {step.status === 'pending' && '·'}
-                  </div>
-                  <span style={{ flex: 1 }}>{step.label}</span>
-                  <span style={{ fontSize: '.8rem', color: 'var(--text-muted)' }}>
-                    {step.status === 'success' && `${(step.durationMs ?? 0).toFixed(0)}ms`}
-                    {step.status === 'error' && (step.error?.message || 'Erreur')}
-                  </span>
-                </div>
-              ))}
+              <div style={{ fontSize: '.85rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+                Condition: panier non-vide + {1} article(s) minimum
+              </div>
             </div>
           )}
 

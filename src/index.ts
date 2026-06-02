@@ -48,7 +48,7 @@
  * - loadOpenApiContract / generateOpenApiArtifactsFromFile / generateScrewsFromOpenApiFile
  */
 
-export { DriverProvider } from './components/DriverProvider';
+export { DriverProvider, DriverContext } from './components/DriverProvider';
 export { createReactScrewClient } from './client/ReactScrewClient';
 export { ReactScrewError } from './errors';
 export {

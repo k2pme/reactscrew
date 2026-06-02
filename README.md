@@ -371,12 +371,12 @@ function CheckoutAll() {
 
 ### Workflow — Sequential orchestration with dependencies
 
-`executeWorkflow` runs steps with dependencies, retry, and parallel mode.
+`executeWorkflow` runs steps with dependencies, retry, parallel mode, and conditional gating.
 
 ```tsx
-import { useScrewWorkflow } from 'reactscrew';
+import { executeWorkflow, useScrewWorkflow } from 'reactscrew';
 
-function OrderWorkflow() {
+function CheckoutWorkflow() {
   const { execute, progress } = useScrewWorkflow({
     steps: [
       { id: 'reserve',  screwName: 'inventory', methodName: 'reserve',  variables: { productId: 5 } },
@@ -388,6 +388,84 @@ function OrderWorkflow() {
 
   return <button onClick={() => execute()}>🔁 Run workflow</button>;
 }
+```
+
+#### Workflow-level conditions
+
+A workflow can have a global `condition` evaluated before any step runs. When paired with `waitForCondition: true`, the workflow polls every 500ms and re-evaluates the condition until it passes (up to 30s).
+
+```tsx
+const result = await executeWorkflow({
+  steps: [
+    { id: 'checkout', screwName: 'orders', methodName: 'checkout', variables: { shippingAddress } },
+    { id: 'tracking', screwName: 'delivery', methodName: 'track', args: [{ orderId: 0 }], dependsOn: ['checkout'] },
+  ],
+  condition: (ctx) => {
+    const cart = ctx.getScrewData('cart', 'get');
+    return cart?.items?.length >= (ctx.variables?.minItems ?? 1);
+  },
+  waitForCondition: true,
+  variables: { minItems: 1 },
+  onStepCondition: (result) => {
+    if (!result.passed) console.log(`⏳ Waiting for "${result.stepId}"`);
+  },
+}, { client, resolveClient, onProgress });
+```
+
+- **`condition`** — receives `{ stepResults, getScrewData, variables }`. Return `true` to proceed.
+- **`waitForCondition`** — if the condition returns `false`, the workflow re-polls.
+- **`variables`** — arbitrary data injected into the condition context via `ctx.variables`.
+- **`onStepCondition`** — callback when a step-level or workflow-level condition is evaluated.
+
+#### Step-level conditions
+
+Individual steps can also have conditions:
+
+```tsx
+{
+  id: 'apply-discount',
+  screwName: 'cart',
+  methodName: 'applyCoupon',
+  condition: (ctx) => ctx.stepResults['checkout']?.data?.couponApplied === true,
+  waitForCondition: true,
+}
+```
+
+#### Declarative workflows in screw definitions
+
+Workflows can be declared directly in a `ScrewDefinition` and auto-executed:
+
+```ts
+const cartScrew: ScrewDefinition = {
+  name: 'cart',
+  methods: { get: { type: 'query', route: '/cart', httpMethod: 'GET' } },
+  workflows: {
+    checkout: {
+      config: {
+        steps: [
+          { id: 'validate', screwName: 'cart', methodName: 'get', label: 'Stock check' },
+          { id: 'checkout', screwName: 'orders', methodName: 'checkout', dependsOn: ['validate'] },
+        ],
+        condition: (ctx) => {
+          const cart = ctx.getScrewData('cart', 'get');
+          return cart?.items?.length > 0;
+        },
+        waitForCondition: true,
+        variables: { minItems: 1 },
+      },
+      autoStart: false,
+    },
+  },
+};
+```
+
+Use `useScrewAutoWorkflow` to execute a declared workflow by passing its config:
+
+```tsx
+const { start, progress, status } = useScrewAutoWorkflow({
+  config: { steps, condition, waitForCondition, variables },
+  onProgress: (snap) => setProgress(snap),
+});
 ```
 
 ### Progress Tracking
