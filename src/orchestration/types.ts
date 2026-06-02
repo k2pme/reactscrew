@@ -1,5 +1,15 @@
 import type { ReactScrewClient } from '../types';
 
+/* ---------- Condition ---------- */
+
+export interface WorkflowConditionContext {
+  stepResults: Record<string, StepResult>;
+  getScrewData: <T = unknown>(screwName: string, methodName: string, args?: unknown[]) => T | undefined;
+  variables?: Record<string, unknown>;
+}
+
+export type WorkflowCondition = (context: WorkflowConditionContext) => boolean | Promise<boolean>;
+
 /* ---------- Step / Action ---------- */
 
 export interface BatchAction {
@@ -66,12 +76,22 @@ export interface WorkflowStep {
   parallel?: boolean;
   continueOnError?: boolean;
   backend?: string;
+  condition?: WorkflowCondition;
+  waitForCondition?: boolean;
 }
+
+export type WorkflowStepConditional = WorkflowStep & {
+  condition: WorkflowCondition;
+};
 
 export interface WorkflowConfig {
   steps: WorkflowStep[];
+  condition?: WorkflowCondition;
+  waitForCondition?: boolean;
+  variables?: Record<string, unknown>;
   onStepComplete?: (step: StepResult, all: StepResult[]) => void | Promise<void>;
   onStepError?: (error: BatchStepError, step: WorkflowStep) => boolean | Promise<boolean>;
+  onStepCondition?: (result: { stepId: string; passed: boolean; skipped: boolean }) => void;
 }
 
 /* ---------- Progress ---------- */
@@ -94,5 +114,9 @@ export interface ExecutionContext {
   client: ReactScrewClient;
   resolveClient?: (screwName: string, backend?: string) => ReactScrewClient;
   onProgress?: (snapshot: ProgressSnapshot) => void;
+  onStepCondition?: (result: { stepId: string; passed: boolean; skipped: boolean }) => void;
   signal?: AbortSignal;
+  variables?: Record<string, unknown>;
 }
+
+

@@ -82,11 +82,49 @@ export type ScrewMethodDefinition<TArgs extends unknown[] = unknown[], TData = u
   | QueryDefinition<TArgs, TData>
   | MutationDefinition<TArgs, TData>;
 
+export interface ScrewWorkflowDefinition {
+  config: {
+    steps: {
+      id: string;
+      screwName: string;
+      methodName: string;
+      variables?: unknown;
+      args?: unknown[];
+      label?: string;
+      dependsOn?: string[];
+      retry?: number;
+      retryDelay?: number;
+      parallel?: boolean;
+      continueOnError?: boolean;
+      backend?: string;
+      condition?: (context: {
+        stepResults: Record<string, { id: string; label: string; status: string; data?: unknown; error?: unknown; durationMs?: number; retries: number }>;
+        getScrewData: <T = unknown>(screwName: string, methodName: string, args?: unknown[]) => T | undefined;
+        variables?: Record<string, unknown>;
+      }) => boolean | Promise<boolean>;
+      waitForCondition?: boolean;
+    }[];
+    condition?: (context: {
+      stepResults: Record<string, { id: string; label: string; status: string; data?: unknown; error?: unknown; durationMs?: number; retries: number }>;
+      getScrewData: <T = unknown>(screwName: string, methodName: string, args?: unknown[]) => T | undefined;
+      variables?: Record<string, unknown>;
+    }) => boolean | Promise<boolean>;
+    waitForCondition?: boolean;
+    variables?: Record<string, unknown>;
+    onStepComplete?: (step: unknown, all: unknown[]) => void | Promise<void>;
+    onStepError?: (error: unknown, step: unknown) => boolean | Promise<boolean>;
+    onStepCondition?: (result: { stepId: string; passed: boolean; skipped: boolean }) => void;
+  };
+  autoStart?: boolean;
+  watch?: { screwName: string; methodName: string; args?: unknown[] }[];
+}
+
 export interface ScrewDefinition {
   name: string;
   executeOnLaunch?: boolean;
   persistence?: boolean;
   methods: Record<string, ScrewMethodDefinition>;
+  workflows?: Record<string, ScrewWorkflowDefinition>;
 }
 
 export type ScrewsMap = Record<string, ScrewDefinition>;

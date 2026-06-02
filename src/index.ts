@@ -34,6 +34,7 @@
  * ## Orchestration (Level 5) — Batch, workflow, progress
  * - useScrewBatch        — Execute homogeneous or heterogeneous batch operations.
  * - useScrewWorkflow     — Orchestrate multi-step workflows with deps, retry, parallelism.
+ * - useScrewAutoWorkflow — Auto-execute a workflow with conditional gating and screw-state watching.
  * - useScrewProgress     — Derive a ProgressSnapshot from a batch or workflow source.
  * - executeBatch         — Pure batch runner (usable outside React).
  * - executeWorkflow      — Pure workflow runner (usable outside React).
@@ -118,6 +119,8 @@ export { useScrewBatch } from './hooks/useScrewBatch';
 export type { UseScrewBatchOptions, UseScrewBatchReturn } from './hooks/useScrewBatch';
 export { useScrewWorkflow } from './hooks/useScrewWorkflow';
 export type { UseScrewWorkflowOptions, UseScrewWorkflowReturn } from './hooks/useScrewWorkflow';
+export { useScrewAutoWorkflow } from './hooks/useScrewAutoWorkflow';
+export type { UseScrewAutoWorkflowOptions, UseScrewAutoWorkflowReturn } from './hooks/useScrewAutoWorkflow';
 export { useScrewProgress } from './hooks/useScrewProgress';
 export type { UseScrewProgressSource } from './hooks/useScrewProgress';
 export { executeBatch, executeWorkflow } from './orchestration';
@@ -130,8 +133,11 @@ export type {
   ProgressSnapshot,
   StepResult,
   StepStatus,
+  WorkflowCondition,
+  WorkflowConditionContext,
   WorkflowConfig,
-  WorkflowStep
+  WorkflowStep,
+  WorkflowStepConditional
 } from './orchestration';
 
 export type {
@@ -166,6 +172,7 @@ export type {
   ScrewDefinition,
   ScrewMethodDefinition,
   ScrewsMap,
+  ScrewWorkflowDefinition,
   UseInfiniteScrewQueryResult,
   UseScrewMutationOptions,
   UseScrewMutationResult,

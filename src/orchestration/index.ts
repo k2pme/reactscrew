@@ -9,6 +9,9 @@ export type {
   ProgressSnapshot,
   StepResult,
   StepStatus,
+  WorkflowCondition,
+  WorkflowConditionContext,
   WorkflowConfig,
-  WorkflowStep
+  WorkflowStep,
+  WorkflowStepConditional
 } from './types';
