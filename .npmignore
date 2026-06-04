@@ -2,9 +2,16 @@ node_modules
 src
 test
 examples
-scripts
 .github
 types
+coverage
+
+# Publish only built artifacts and the CLI entrypoints.
+scripts/*
+!scripts/generate-openapi-screws.mjs
+!scripts/openapi-contract.mjs
+
+# Local config and metadata.
 webpack.config.js
 tsconfig.json
 tsconfig.build.json
@@ -12,6 +19,15 @@ vitest.config.ts
 .babelrc
 .gitignore
 .npmignore
+.editorconfig
+
+# Local artifacts.
+*.log
+*.tgz
+.env*
+package-lock.json
+
+# Working notes.
 TASK.md
 TODO.md
 MVP.md
