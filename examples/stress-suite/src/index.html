@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReactScrew Stress Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #f4efe6;
+        --ink: #16110d;
+        --muted: #62574c;
+        --panel: rgba(255,255,255,0.76);
+        --line: rgba(22,17,13,0.12);
+        --accent: #ca5d29;
+        --accent-soft: #f4c6ae;
+        --success: #167a5a;
+        --warning: #b86b1a;
+        --danger: #b73838;
+      }
+      * { box-sizing: border-box; }
+      html, body, #root { margin: 0; min-height: 100%; }
+      body {
+        font-family: "Manrope", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top right, rgba(202, 93, 41, 0.14), transparent 24%),
+          linear-gradient(180deg, #f8f2ea 0%, #f1eadf 100%);
+      }
+      button, input, select { font: inherit; }
+      .suite-shell {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 28px 18px 60px;
+      }
+      .suite-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: end;
+        margin-bottom: 18px;
+      }
+      .eyebrow, .summary-card span, .panel-head span, .muted, .pill {
+        font-family: "IBM Plex Mono", monospace;
+      }
+      .eyebrow {
+        margin: 0 0 10px;
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2.1rem, 5vw, 4.2rem);
+        line-height: 0.95;
+        max-width: 12ch;
+      }
+      .nav-tabs, .button-stack {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .nav-tab, .ghost-btn, .primary-btn, .compact {
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        padding: 11px 16px;
+        cursor: pointer;
+        background: rgba(255,255,255,0.55);
+        color: var(--ink);
+      }
+      .nav-tab.active, .primary-btn {
+        background: linear-gradient(135deg, #ca5d29, #ea946b);
+        color: #fff;
+        border-color: transparent;
+      }
+      .summary-grid, .project-grid, .kanban-grid, .service-grid {
+        display: grid;
+        gap: 14px;
+      }
+      .summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-bottom: 18px;
+      }
+      .summary-card, .main-panel, .panel, .task-card, .service-card, .incident-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 24px 60px rgba(53, 31, 17, 0.08);
+      }
+      .summary-card {
+        border-radius: 24px;
+        padding: 18px;
+      }
+      .summary-card strong { display: block; font-size: 18px; }
+      .summary-card span { display: block; margin: 6px 0 10px; color: var(--muted); }
+      .summary-card p { margin: 0; color: var(--muted); }
+      .summary-card.positive { box-shadow: inset 0 0 0 1px rgba(22,122,90,0.18); }
+      .summary-card.warning { box-shadow: inset 0 0 0 1px rgba(184,107,26,0.18); }
+      .summary-card.danger { box-shadow: inset 0 0 0 1px rgba(183,56,56,0.18); }
+      .project-grid {
+        grid-template-columns: 1.55fr 0.85fr;
+      }
+      .main-panel, .panel {
+        border-radius: 28px;
+        padding: 18px;
+      }
+      .side-stack {
+        display: grid;
+        gap: 14px;
+      }
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+      .panel-head h2 { margin: 0; font-size: 20px; }
+      .panel-head span, .muted { color: var(--muted); font-size: 13px; }
+      .kanban-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .kanban-column {
+        background: rgba(255,255,255,0.44);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 14px;
+      }
+      .column-head {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .task-card, .incident-card, .service-card {
+        border-radius: 18px;
+        padding: 14px;
+        margin-top: 10px;
+      }
+      .task-card p, .service-card p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+      .task-select {
+        display: flex;
+        gap: 10px;
+        align-items: start;
+        font-weight: 700;
+      }
+      .service-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-bottom: 14px;
+      }
+      .service-card.healthy { box-shadow: inset 0 0 0 1px rgba(22,122,90,0.2); }
+      .service-card.degraded { box-shadow: inset 0 0 0 1px rgba(184,107,26,0.2); }
+      .service-card.down { box-shadow: inset 0 0 0 1px rgba(183,56,56,0.2); }
+      .incident-list, .step-list {
+        display: grid;
+        gap: 10px;
+      }
+      .incident-card { cursor: pointer; }
+      .incident-card.active { border-color: rgba(202,93,41,0.42); background: rgba(244,198,174,0.34); }
+      .step-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.5);
+        border: 1px solid var(--line);
+      }
+      .step-row.success strong { color: var(--success); }
+      .step-row.error strong { color: var(--danger); }
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+      .field span { color: var(--muted); font-size: 12px; }
+      .field select {
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.65);
+      }
+      .progress-track {
+        margin-top: 12px;
+        width: 100%;
+        height: 10px;
+        background: rgba(22,17,13,0.08);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #ca5d29, #efaf8b);
+      }
+      .table-wrap {
+        overflow: auto;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: rgba(255,255,255,0.5);
+      }
+      th, td {
+        padding: 14px 12px;
+        text-align: left;
+        border-bottom: 1px solid rgba(22,17,13,0.08);
+        white-space: nowrap;
+      }
+      .pill {
+        display: inline-flex;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(22,17,13,0.08);
+        text-transform: uppercase;
+        font-size: 11px;
+      }
+      .pill.review { background: rgba(184,107,26,0.14); }
+      .pill.approved { background: rgba(22,122,90,0.12); }
+      .pill.flagged { background: rgba(183,56,56,0.14); }
+      .compact { padding: 8px 12px; }
+      .devtools-wrap { margin-top: 16px; }
+      @media (max-width: 1120px) {
+        .suite-header, .project-grid { grid-template-columns: 1fr; display: grid; }
+        .summary-grid, .service-grid { grid-template-columns: 1fr 1fr; }
+        .kanban-grid { grid-template-columns: 1fr 1fr; }
+      }
+      @media (max-width: 720px) {
+        .suite-shell { padding: 18px 12px 40px; }
+        .summary-grid, .service-grid, .kanban-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

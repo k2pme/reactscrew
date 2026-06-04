@@ -53,6 +53,7 @@
   "author": "k2pme",
   "license": "MIT",
   "dependencies": {
+    "lightweight-charts": "^5.2.0",
     "localforage": "^1.10.0"
   },
   "peerDependencies": {

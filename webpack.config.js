@@ -11,6 +11,16 @@ const configs = {
     template: './examples/basic/index.html',
     dist: path.resolve(__dirname, 'examples/basic/dist'),
   },
+  'trading': {
+    entry: './examples/trading/src/index.tsx',
+    template: './examples/trading/src/index.html',
+    dist: path.resolve(__dirname, 'examples/trading/dist'),
+  },
+  'stress-suite': {
+    entry: './examples/stress-suite/src/index.tsx',
+    template: './examples/stress-suite/src/index.html',
+    dist: path.resolve(__dirname, 'examples/stress-suite/dist'),
+  },
   'e-commerce': {
     entry: './examples/e-commerce/src/index.tsx',
     template: './examples/e-commerce/src/index.html',

@@ -83,6 +83,30 @@ Files:
 - [openapi-generated/generated/userScrews.js](/home/clodlin/reactscrew/examples/openapi-generated/generated/userScrews.js)
 - [openapi-generated/App.jsx](/home/clodlin/reactscrew/examples/openapi-generated/App.jsx)
 
+### `trading`
+
+Purpose:
+- multi-view trading dashboard
+- timed batch refreshes with local market simulation
+- workflow-driven alerts and optional client-side sound signal
+
+Files:
+- [trading/src/index.tsx](/home/clodlin/reactscrew/examples/trading/src/index.tsx)
+- [trading/src/App.tsx](/home/clodlin/reactscrew/examples/trading/src/App.tsx)
+- [trading/src/marketApi.ts](/home/clodlin/reactscrew/examples/trading/src/marketApi.ts)
+
+### `stress-suite`
+
+Purpose:
+- single shell with header navigation across stress scenarios
+- kanban batch actions, ops workflow remediation, backoffice bulk review
+- more realistic multi-surface demo for exercising `reactscrew`
+
+Files:
+- [stress-suite/src/index.tsx](/home/clodlin/reactscrew/examples/stress-suite/src/index.tsx)
+- [stress-suite/src/App.tsx](/home/clodlin/reactscrew/examples/stress-suite/src/App.tsx)
+- [stress-suite/src/suiteApi.ts](/home/clodlin/reactscrew/examples/stress-suite/src/suiteApi.ts)
+
 ## Recommended Reading Order
 
 1. `basic`
@@ -91,4 +115,6 @@ Files:
 4. `infinite-query`
 5. `auth-refresh`
 6. `openapi-generated`
-7. `next-app-router`
+7. `trading`
+8. `stress-suite`
+9. `next-app-router`

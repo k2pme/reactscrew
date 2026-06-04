@@ -231,6 +231,7 @@ export const executeWorkflow = async (
     waitingCount = 0;
     const results: StepResult[] = [];
     let hadPending = false;
+    let encounteredBlockingError = false;
 
     const runStep = async (step: WorkflowStep): Promise<StepResult> => {
       mergedCtx.onProgress?.({
@@ -267,7 +268,7 @@ export const executeWorkflow = async (
         }
 
         if (result.status === 'error' && result.error?.type === 'blocking') {
-          hasBlockingFailure = true;
+          encounteredBlockingError = true;
           break;
         }
       }
@@ -277,6 +278,17 @@ export const executeWorkflow = async (
       if (result.status !== 'pending') {
         completed.set(result.id, result);
         await config.onStepComplete?.(result, Array.from(completed.values()));
+      }
+
+      if (result.status === 'error' && result.error) {
+        const sourceStep = allSteps.find((step) => step.id === result.id);
+        const shouldContinue = sourceStep
+          ? await config.onStepError?.(result.error, sourceStep)
+          : false;
+
+        if (!shouldContinue && result.error.type === 'blocking') {
+          hasBlockingFailure = true;
+        }
       }
     }
 

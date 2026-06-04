@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useContext, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { DriverContext } from '../components/DriverProvider';
 import { ReactScrewError } from '../errors';
 import { executeWorkflow } from '../orchestration/workflow';
@@ -41,6 +41,10 @@ export const useScrewWorkflow = (
   const [progress, setProgress] = useState<ProgressSnapshot | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const configRef = useRef(config);
+
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   const execute = useCallback(
     async (steps?: WorkflowStep[]): Promise<{ steps: StepResult[]; status: 'completed' | 'failed' | 'partial' }> => {
